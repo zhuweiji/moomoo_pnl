@@ -31,18 +31,10 @@ def ensure_opend_running():
         raise ValueError()
 
     if platform.system() == "Windows":
-        opend_path = (
-            Path(__file__).parent.parent.parent
-            / "moomoo_OpenD_8.6.4608_Windows"
-            / "OpenD.exe"
-        )
+        opend_path = Path(__file__).parent.parent.parent / "moomoo_OpenD_9.2.5208_Windows" / "OpenD.exe"
         start_flags = {"creationflags": subprocess.CREATE_NEW_CONSOLE}
     else:
-        opend_path = (
-            Path(__file__).parent.parent.parent
-            / "moomoo_OpenD_8.6.4608_Ubuntu16.04"
-            / "OpenD"
-        )
+        opend_path = Path(__file__).parent.parent.parent / "moomoo_OpenD_9.2.5208_Ubuntu16.04" / "OpenD"
         start_flags = {}
 
     if not opend_path.exists():

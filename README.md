@@ -8,11 +8,13 @@ The total P&L shown on your Moomoo's accounts page also changes wildly when you 
 
 ## Features
 
+### Page showing overall profit/loss per stock ticker
 
-1. Page showing overall profit/loss per stock ticker
-2. sell page with custom sell order types
-3. buy page with custom buy order types
-4. notifications for custom alerts
+### Sell page with custom sell order types
+
+### Buy page with custom buy order types
+
+### Notifications for custom alerts
 
 
 ## Installation
