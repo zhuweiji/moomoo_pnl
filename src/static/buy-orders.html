@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trailing Stop Buy Orders</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">Moomoo PnL</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/sell_orders">Sell Orders</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/buy_orders">Buy Orders</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Trailing Stop Buy Orders</h2>
+        <a href="/buy-order-form" class="btn btn-primary">
+          <i class="bi bi-plus-lg"></i> New Buy Order
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="mb-3">
+            <select id="statusFilter" class="form-select w-auto">
+              <option value="">All Statuses</option>
+              <option value="waiting">Waiting</option>
+              <option value="triggered">Triggered</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="error">Error</option>
+            </select>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Stock Code</th>
+                  <th>Quantity</th>
+                  <th>Max Price</th>
+                  <th>Trail Amount</th>
+                  <th>Trail Percent</th>
+                  <th>Lowest Price</th>
+                  <th>Current Price</th>
+                  <th>Trigger Price</th>
+                  <th>Price Change</th>
+                  <th>Status</th>
+                  <th>Last Check</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+                <!-- Orders will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Format date
+      function formatDate(dateStr) {
+        if (!dateStr) return '-'
+        const date = new Date(dateStr)
+        return date.toLocaleString()
+      }
+
+      // Format number to 2 decimal places
+      function formatNumber(num) {
+        return num ? num.toFixed(2) : '-'
+      }
+
+      // Load orders from API
+      async function loadOrders() {
+        try {
+          const statusFilter = document.getElementById('statusFilter').value
+          const url = new URL(
+            '/api/trailing-stop/buy_orders',
+            window.location.origin
+          )
+          if (statusFilter) {
+            url.searchParams.append('status', statusFilter)
+          }
+          const response = await fetch(url)
+          if (!response.ok) throw new Error('Failed to load orders')
+          const orders = await response.json()
+
+          // Get current prices for all unique stock codes
+          const stockPrices = new Map()
+          for (const order of orders) {
+            if (!stockPrices.has(order.stock_code)) {
+              try {
+                const priceResponse = await fetch(
+                  `/api/stock-data/stock-price/${order.stock_code}`
+                )
+                if (priceResponse.ok) {
+                  const data = await priceResponse.json()
+                  stockPrices.set(order.stock_code, data.price)
+                }
+              } catch (error) {
+                console.error(
+                  `Failed to get price for ${order.stock_code}:`,
+                  error
+                )
+              }
+            }
+          }
+
+          // Update table
+          const tbody = document.getElementById('ordersTableBody')
+          tbody.innerHTML = orders
+            .map(order => {
+              const currentPrice = stockPrices.get(order.stock_code)
+              const priceChange =
+                currentPrice && order.lowest_price !== 1e10
+                  ? (
+                      ((currentPrice - order.lowest_price) /
+                        order.lowest_price) *
+                      100
+                    ).toFixed(2) + '%'
+                  : '-'
+
+              const hasError =
+                order.error_message && order.error_message !== 'null'
+
+              const hasComments = order.comments && order.comments !== 'null'
+
+              return `
+                        <tr>
+                            <td>${order.stock_code}</td>
+                            <td>${order.quantity}</td>
+                            <td>${order.max_price}</td>
+                            <td>${order.trailing_amount || '-'}</td>
+                            <td>${order.trailing_percent || '-'}</td>
+                            <td>${
+                              order.lowest_price === 1e10
+                                ? '-'
+                                : order.lowest_price
+                            }</td>
+                            <td>${
+                              currentPrice ? currentPrice.toFixed(2) : '-'
+                            }</td>
+                            <td>${
+                              order.trigger_price < order.max_price
+                                ? order.trigger_price?.toFixed(2)
+                                : order.max_price
+                            }</td>
+                            <td>${priceChange}</td>
+                            <td>
+                                <span class="badge ${getStatusBadgeClass(
+                                  order.status
+                                )}">
+                                    ${order.status}
+                                </span>
+                                ${
+                                  hasError
+                                    ? `
+                                    <button class="btn btn-link btn-sm text-danger p-0 ms-1" 
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#error-${order.id}" 
+                                            aria-expanded="false">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                    </button>
+                                `
+                                    : ''
+                                }
+                            </td>
+                            <td>${formatDate(order.last_check_time)}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-primary" onclick="editOrder('${
+                                      order.id
+                                    }')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelOrder('${
+                                      order.id
+                                    }')" >
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        ${
+                          hasError
+                            ? `
+                            <tr>
+                                <td colspan="12" class="p-0">
+                                    <div class="collapse" id="error-${order.id}" p-2>
+                                        <div class="alert alert-danger m-2 mb-0 p-2">
+                                            ${order.error_message}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `
+                            : ''
+                        }
+                            ${
+                              hasComments
+                                ? `
+                            <tr>
+                                <td colspan="12" class="p-0">
+                                    <div class="collapse" id="comment-${order.id}" p-2>
+                                        <div class="alert alert-info m-2 mb-0 p-2">
+                                            ${order.comments}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `
+                                : ''
+                            }
+                    `
+            })
+            .join('')
+        } catch (error) {
+          console.error('Error loading orders:', error)
+          alert('Failed to load orders. Please try again.')
+        }
+      }
+
+      function getStatusBadgeClass(status) {
+        switch (status) {
+          case 'waiting':
+            return 'bg-warning'
+          case 'triggered':
+            return 'bg-info'
+          case 'completed':
+            return 'bg-success'
+          case 'cancelled':
+            return 'bg-secondary'
+          case 'error':
+            return 'bg-danger'
+          default:
+            return 'bg-secondary'
+        }
+      }
+
+      // Cancel an order
+      async function cancelOrder(orderId) {
+        if (!confirm('Are you sure you want to cancel this order?')) return
+
+        try {
+          const response = await fetch(
+            `/api/trailing-stop/buy_orders/${orderId}`,
+            {
+              method: 'DELETE'
+            }
+          )
+
+          if (!response.ok) throw new Error('Failed to cancel order')
+
+          await loadOrders() // Reload the table
+        } catch (error) {
+          console.error('Error cancelling order:', error)
+          alert('Failed to cancel order. Please try again.')
+        }
+      }
+
+      // Initial load
+      document.addEventListener('DOMContentLoaded', () => {
+        const statusFilter = document.getElementById('statusFilter')
+
+        // Load saved filter value
+        const savedStatus = localStorage.getItem('buyOrdersStatusFilter')
+        if (savedStatus) {
+          statusFilter.value = savedStatus
+        }
+
+        // Save filter value on change
+        statusFilter.addEventListener('change', e => {
+          localStorage.setItem('buyOrdersStatusFilter', e.target.value)
+          loadOrders()
+        })
+
+        loadOrders()
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trailing Stop Buy Order Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Moomoo PnL</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/sell_orders">Sell Orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/buy_orders">Buy Orders</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 id="formTitle">New Trailing Stop Buy Order</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="orderForm" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="stockType" class="form-label">Stock Selection Type</label>
+                                <select class="form-select" id="stockType" name="stock_type">
+                                    <option value="current">Select from Current Positions</option>
+                                    <option value="custom">Enter Custom Stock</option>
+                                </select>
+                            </div>
+
+                            <div id="currentStockGroup" class="mb-3">
+                                <label for="stockCode" class="form-label">Stock</label>
+                                <select class="form-select" id="stockCode" name="stock_code" required>
+                                    <option value="">Select a stock</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a stock.</div>
+                            </div>
+
+                            <div id="customStockGroup" class="mb-3" style="display: none;">
+                                <label for="customStockCode" class="form-label">Stock Code</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="customStockCode" name="custom_stock_code" pattern="[A-Za-z0-9.]+" maxlength="20">
+                                    <button class="btn btn-outline-secondary" type="button" id="fetchPriceBtn">
+                                        <i class="bi bi-arrow-clockwise"></i> Get Price
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">Please enter a valid stock code.</div>
+                                <div class="form-text">Enter the stock code (e.g., US.AAPL, US.GOOGL)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                                <div class="invalid-feedback">Please enter a valid quantity.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="maxPrice" class="form-label">Maximum Price ($)</label>
+                                <input type="number" class="form-control" id="maxPrice" name="max_price" min="0.01" step="0.01" required>
+                                <div class="invalid-feedback">Please enter a valid maximum price.</div>
+                                <div class="form-text">Current: $<span id="currentPrice">-</span></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Trail Type</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="trailType" id="trailTypeAmount" value="amount" checked>
+                                    <label class="form-check-label" for="trailTypeAmount">Fixed Amount</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="trailType" id="trailTypePercent" value="percent">
+                                    <label class="form-check-label" for="trailTypePercent">Percentage</label>
+                                </div>
+                            </div>
+
+                            <div id="trailAmountGroup" class="mb-3">
+                                <label for="trailAmount" class="form-label">Trail Amount ($)</label>
+                                <input type="number" class="form-control" id="trailAmount" name="trailing_amount" min="0.01" step="0.01">
+                                <div class="invalid-feedback">Please enter a valid trail amount.</div>
+                            </div>
+
+                            <div id="trailPercentGroup" class="mb-3" style="display: none;">
+                                <label for="trailPercent" class="form-label">Trail Percentage (%)</label>
+                                <input type="number" class="form-control" id="trailPercent" name="trailing_percent" min="0.01" max="99.99" step="0.01">
+                                <div class="invalid-feedback">Please enter a valid percentage between 0 and 100.</div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Save Order</button>
+                                <a href="/buy_orders" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get order ID from URL if editing
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+        const isEditing = !!orderId;
+
+        // Update form title if editing
+        if (isEditing) {
+            document.getElementById('formTitle').textContent = 'Edit Trailing Stop Buy Order';
+        }
+
+        // Load positions data
+        let positionsData = [];
+        
+        async function loadPositions() {
+            try {
+                const response = await fetch('/api/positions/current');
+                if (!response.ok) throw new Error('Failed to load positions');
+                positionsData = await response.json();
+                
+                // Populate stock select
+                const select = document.getElementById('stockCode');
+                select.innerHTML = '<option value="">Select a stock</option>' +
+                    positionsData.map(pos => `
+                        <option value="${pos.code}" 
+                                data-price="${pos.nominal_price}">
+                            ${pos.stock_name} (${pos.code})
+                        </option>
+                    `).join('');
+
+                // If editing, select the current stock
+                if (isEditing) {
+                    const stockExists = Array.from(select.options).some(opt => opt.value === document.getElementById('stockCode').value);
+                    if (stockExists) {
+                        select.value = document.getElementById('stockCode').value;
+                        document.getElementById('stockType').value = 'current';
+                    } else {
+                        document.getElementById('stockType').value = 'custom';
+                        document.getElementById('customStockCode').value = document.getElementById('stockCode').value;
+                    }
+                    document.getElementById('stockType').dispatchEvent(new Event('change'));
+                    document.getElementById('stockType').disabled = true;
+                }
+            } catch (error) {
+                console.error('Error loading positions:', error);
+                alert('Failed to load available stocks. Please try again.');
+            }
+        }
+
+        // Handle stock type selection change
+        document.getElementById('stockType').addEventListener('change', (e) => {
+            const isCustom = e.target.value === 'custom';
+            document.getElementById('currentStockGroup').style.display = isCustom ? 'none' : 'block';
+            document.getElementById('customStockGroup').style.display = isCustom ? 'block' : 'none';
+
+            // Update required attributes
+            if (isCustom) {
+                document.getElementById('stockCode').removeAttribute('required');
+                document.getElementById('customStockCode').setAttribute('required', '');
+            } else {
+                document.getElementById('stockCode').setAttribute('required', '');
+                document.getElementById('customStockCode').removeAttribute('required');
+            }
+
+            // Clear current price if custom stock
+            if (isCustom) {
+                document.getElementById('currentPrice').textContent = '-';
+                document.getElementById('maxPrice').value = '';
+            } else {
+                const option = document.getElementById('stockCode').selectedOptions[0];
+                if (option && option.value) {
+                    document.getElementById('currentPrice').textContent = option.dataset.price || '-';
+                    if (!isEditing) {
+                        document.getElementById('maxPrice').value = option.dataset.price || '';
+                    }
+                }
+            }
+        });
+
+        // Handle stock selection change
+        document.getElementById('stockCode').addEventListener('change', (e) => {
+            const option = e.target.selectedOptions[0];
+            if (!option) return;
+
+            const price = option.dataset.price;
+            document.getElementById('currentPrice').textContent = price || '-';
+            
+            // Set default values
+            if (!isEditing) {
+                document.getElementById('maxPrice').value = price || '';
+            }
+        });
+
+        // Handle trail type radio change
+        document.querySelectorAll('input[name="trailType"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const isAmount = radio.value === 'amount';
+                document.getElementById('trailAmountGroup').style.display = isAmount ? 'block' : 'none';
+                document.getElementById('trailPercentGroup').style.display = isAmount ? 'none' : 'block';
+                
+                // Clear and disable the unused input
+                if (isAmount) {
+                    document.getElementById('trailPercent').value = '';
+                    document.getElementById('trailPercent').removeAttribute('required');
+                    document.getElementById('trailAmount').setAttribute('required', '');
+                } else {
+                    document.getElementById('trailAmount').value = '';
+                    document.getElementById('trailAmount').removeAttribute('required');
+                    document.getElementById('trailPercent').setAttribute('required', '');
+                }
+            });
+        });
+
+        // Handle custom stock price fetch
+        document.getElementById('fetchPriceBtn').addEventListener('click', async () => {
+            const stockCode = document.getElementById('customStockCode').value;
+            if (!stockCode) {
+                alert('Please enter a stock code first');
+                return;
+            }
+
+            try {
+                document.getElementById('fetchPriceBtn').disabled = true;
+                const response = await fetch(`/api/stock-data/stock-price/${stockCode}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to fetch price');
+                }
+                const data = await response.json();
+                document.getElementById('currentPrice').textContent = data.price.toFixed(2);
+                if (!isEditing) {
+                    document.getElementById('maxPrice').value = data.price.toFixed(2);
+                }
+            } catch (error) {
+                console.error('Error fetching price:', error);
+                alert(error.message);
+            } finally {
+                document.getElementById('fetchPriceBtn').disabled = false;
+            }
+        });
+
+        // Handle custom stock code input
+        document.getElementById('customStockCode').addEventListener('input', () => {
+            // Clear price when stock code changes
+            document.getElementById('currentPrice').textContent = '-';
+            if (!isEditing) {
+                document.getElementById('maxPrice').value = '';
+            }
+        });
+
+        // Load order data if editing
+        if (isEditing) {
+            fetch(`/api/trailing-stop/buy_orders/${orderId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load order');
+                    return response.json();
+                })
+                .then(order => {
+                    if (order.stock_code) {
+                        document.getElementById('stockType').value = 'custom';
+                        document.getElementById('customStockCode').value = order.stock_code;
+                    } else {
+                        document.getElementById('stockType').value = 'current';
+                        document.getElementById('stockCode').value = order.stock_code;
+                    }
+                    document.getElementById('quantity').value = order.quantity;
+                    document.getElementById('maxPrice').value = order.max_price;
+                    
+                    if (order.trailing_amount !== null) {
+                        document.getElementById('trailTypeAmount').checked = true;
+                        document.getElementById('trailAmount').value = order.trailing_amount;
+                    } else {
+                        document.getElementById('trailTypePercent').checked = true;
+                        document.getElementById('trailPercent').value = order.trailing_percent;
+                    }
+                    
+                    // Trigger trail type change event
+                    document.querySelector('input[name="trailType"]:checked')
+                        .dispatchEvent(new Event('change'));
+                })
+                .catch(error => {
+                    console.error('Error loading order:', error);
+                    alert('Failed to load order details. Please try again.');
+                });
+        }
+
+        // Handle form submission
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Form validation
+            if (!e.target.checkValidity()) {
+                e.stopPropagation();
+                e.target.classList.add('was-validated');
+                return;
+            }
+
+            // Prepare order data
+            const formData = {
+                stock_code: document.getElementById('stockType').value === 'custom' 
+                    ? document.getElementById('customStockCode').value 
+                    : document.getElementById('stockCode').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                max_price: parseFloat(document.getElementById('maxPrice').value)
+            };
+
+            // Add trail type
+            if (document.getElementById('trailTypeAmount').checked) {
+                formData.trailing_amount = parseFloat(document.getElementById('trailAmount').value);
+            } else {
+                formData.trailing_percent = parseFloat(document.getElementById('trailPercent').value);
+            }
+
+            console.log(formData);
+
+            try {
+                const response = await fetch(`/api/trailing-stop/buy_orders${isEditing ? `/${orderId}` : ''}`, {
+                    method: isEditing ? 'PATCH' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to save order');
+                }
+
+                window.location.href = '/buy_orders';
+            } catch (error) {
+                console.error('Error saving order:', error);
+                alert(error.message);
+            }
+        });
+
+        // Load positions on page load
+        document.addEventListener('DOMContentLoaded', loadPositions);
+    </script>
+</body>
+</html>

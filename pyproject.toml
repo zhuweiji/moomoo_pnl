@@ -1,0 +1,22 @@
+[project]
+name = "moomoo-pnl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.5",
+    "moomoo-api>=8.7.4708",
+    "python-dotenv>=1.0.1",
+    "uvicorn>=0.32.1",
+    "psutil>=5.9.0",
+    "llm-team",
+    "pandas>=2.2.3",
+    "feedparser>=6.0.11",
+    "bs4>=0.0.2",
+    "openai>=1.58.1",
+    "yfinance>=0.2.65",
+]
+
+[tool.uv.sources]
+llm-team = { path = "llm_team-0.1.8-py3-none-any.whl" }
