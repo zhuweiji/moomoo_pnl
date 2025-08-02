@@ -6,18 +6,21 @@ This was created because there is no way to track your total Profit and Loss for
 
 The total P&L shown on your Moomoo's accounts page also changes wildly when you add or remove funds from your account, and is not really reflective of your true P&L.
 
+## Features
+
+
+1. Page showing overall profit/loss per stock ticker
+2. sell page with custom sell order types
+3. buy page with custom buy order types
+4. notifications for custom alerts
+
+
 ## Installation
 
-You can run this as a standalone app or in a docker container.
+This project uses `uv` to manage python dependencies.
 
 ```bash
-pip install requirements.txt
-```
-
-## Usage
-
-```
-moomoo_OpenD_8.6.4608_Ubuntu16.04/moomoo_OpenD_8.6.4608_Ubuntu16.04/OpenD
+uv run python -m src.main
 ```
 
 ## Contributing
