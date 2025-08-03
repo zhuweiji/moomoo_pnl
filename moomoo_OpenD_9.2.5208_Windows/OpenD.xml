@@ -1,0 +1,14 @@
+<moomoo_opend>
+	<ip>127.0.0.1</ip>
+	<api_port>18091</api_port>
+	<login_account>100000</login_account>
+	<login_pwd>123456</login_pwd>
+	<lang>en</lang>
+	<log_level>info</log_level>
+	<push_proto_type>0</push_proto_type>
+	<price_reminder_push>1</price_reminder_push>
+	<auto_hold_quote_right>1</auto_hold_quote_right>
+	<future_trade_api_time_zone>UTC+8</future_trade_api_time_zone>
+	<pdt_protection>1</pdt_protection>
+	<dtcall_confirmation>1</dtcall_confirmation>
+</moomoo_opend>
