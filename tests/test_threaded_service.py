@@ -24,7 +24,7 @@ class MockThreadedService(ThreadedService):
 @pytest.fixture
 def service():
     """Fixture to provide a clean MockThreadedService instance for each test."""
-    service = MockThreadedService(check_interval_seconds=0.1)
+    service = MockThreadedService(check_interval_seconds=0.1)  # type: ignore
     yield service
     # Cleanup after each test
     if service.running:
@@ -138,7 +138,7 @@ class TestThreadedService:
 
         class ExceptionService(ThreadedService):
             def __init__(self):
-                super().__init__(check_interval_seconds=0.05)
+                super().__init__(check_interval_seconds=0.05)  # type: ignore
                 self.running = False
                 self.monitor_thread = None
                 self.call_count = 0
