@@ -66,7 +66,7 @@ if __name__ == "__main__":
         if account_password:
             tree = replace_xml_value(
                 xml_tree=tree,
-                field_name="login_account",
+                field_name="login_pwd",
                 new_value=account_password,
                 replace_if_this_value=PLACEHOLDER_MOOMOO_LOGIN_ACCOUNT_PASSWORD,
             )
