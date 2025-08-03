@@ -1,5 +1,3 @@
-"""Constants used throughout the application."""
-
 from datetime import datetime
 
 FIRST_ORDER_DATE = "2024-03-31 00:00:00"

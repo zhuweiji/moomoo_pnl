@@ -7,7 +7,7 @@ from moomoo import RET_OK, OpenSecTradeContext, SecurityFirm, TrdMarket, TrdSide
 
 from src.core.orders.models import CurrentPosition, HistoricalOrder
 from src.core.utilities import get_logger
-from src.core.utilities.constants import FIRST_ORDER_DATE, get_current_datetime
+from src.core.utilities.datetime_utils import FIRST_ORDER_DATE, get_current_datetime
 
 log = get_logger(__name__)
 
