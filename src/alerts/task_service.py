@@ -2,6 +2,7 @@ import asyncio
 import threading
 from datetime import datetime
 from typing import Any, Callable, Optional
+from uuid import uuid4
 
 from pydantic import BaseModel
 
@@ -20,6 +21,9 @@ class TaskConfig(BaseModel):
     alert_message: Optional[str] = None  # Custom alert message
     last_run: Optional[datetime] = None
     name: Optional[str] = None  # Readable short name for humans
+
+    def to_dict(self):
+        return self.model_dump()
 
 
 class TaskService:
@@ -59,7 +63,7 @@ class TaskService:
         :param alert_message: Optional custom alert message
         :return: Task ID
         """
-        task_id = func.__name__
+        task_id = str(uuid4())
         self.tasks[task_id] = TaskConfig(
             func=func,
             interval_seconds=interval_seconds,
@@ -68,6 +72,12 @@ class TaskService:
             name=name,
         )
         return task_id
+
+    def get_all_tasks(self):
+        return self.tasks
+
+    def get_task(self, task_id: str):
+        return self.tasks.get(task_id)
 
     async def _run_task(self, task_id: str):
         """Internal method to run a specific task periodically"""
@@ -155,14 +165,3 @@ class TaskService:
         if task_id in self.running_tasks:
             self.running_tasks[task_id].cancel()
             del self.running_tasks[task_id]
-
-    def get_task_status(self, task_id: str) -> dict:
-        """Get status of a specific task"""
-        if task_id not in self.tasks:
-            return {"error": "Task not found"}
-
-        task_config = self.tasks[task_id]
-        return {
-            "last_run": task_config.last_run,
-            "is_running": task_id in self.running_tasks,
-        }
