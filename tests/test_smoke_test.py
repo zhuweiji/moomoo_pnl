@@ -19,15 +19,12 @@ def test_run_smoke_test():
     """Run the service for 5 seconds and check if it starts successfully."""
 
     # Path to your main.py file
-    main_py_path = Path("src/main.py")
-
-    if not main_py_path.exists():
-        raise Exception(f"Error: {main_py_path} not found")
+    main_py_path = "src.main"
 
     process = None
     try:
         # Start the service as a subprocess
-        process = subprocess.Popen([sys.executable, str(main_py_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        process = subprocess.Popen([sys.executable, "-m", str(main_py_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Wait for 5 seconds
         time.sleep(5)
@@ -36,7 +33,7 @@ def test_run_smoke_test():
         poll_result = process.poll()
 
         if poll_result is None:
-            return True
+            return None
         else:
             log.exception(f"Service exited with code {poll_result}")
 
