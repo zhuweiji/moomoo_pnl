@@ -1,22 +1,19 @@
 import asyncio
 import hashlib
-import json
-import logging
-import re
 import time
-from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set
-from urllib.parse import urljoin
 
 import aiohttp
 import feedparser
 
 from src.core.utilities import (
     EXTERNAL_SERVICE_DEFAULT_TIMEOUT_SECONDS,
-    RSS_CACHE_DURATION_SECONDS,
     RSS_FEED_MAP,
+    RSS_FEED_REFRESH_INTERVAL_SECONDS,
+    Singleton,
+    ThreadedService,
     get_logger,
 )
 
@@ -92,28 +89,30 @@ class SingleRSSFeedService:
             return []
 
 
-class FinancialRSSService:
+class FinancialRSSService(ThreadedService):
     """
     A comprehensive RSS feed service for financial news aggregation.
     Designed for AI agentic systems and programmatic access.
     """
 
+    __metaclass__ = Singleton  # make all API calls from a Singleton object so we don't accidentally spam services if we create multiple instances
+
     def __init__(
         self,
-        cache_duration: int = RSS_CACHE_DURATION_SECONDS,  # 5 minutes
         max_concurrent_requests: int = 10,
         timeout: int = 30,
     ):
-        self.cache_duration = cache_duration
+        super().__init__(check_interval_seconds=RSS_FEED_REFRESH_INTERVAL_SECONDS)
+
+        # config
         self.max_concurrent_requests = max_concurrent_requests
         self.timeout = timeout
-
         self.rss_feeds = RSS_FEED_MAP
 
+        # services
         self.rss_feed_service = SingleRSSFeedService()
 
         # internals
-        self.cache = {}
         self.last_fetch = {}
 
     def add_source(self, name: str, url: str):
@@ -130,6 +129,16 @@ class FinancialRSSService:
     def get_sources(self) -> List[str]:
         """Get list of available news sources."""
         return list(self.rss_feeds.keys())
+
+    async def run(self):
+        """Refreshes the data from its sources"""
+
+        # Check cache first
+        log.info("Fetching fresh news data")
+        news_items = await self._fetch_all_feeds()
+        self.last_fetch["timestamp"] = time.time()
+
+        return [item.to_dict() for item in news_items]
 
     async def _fetch_all_feeds(self) -> List[FinancialNewsItem]:
         """Fetch all RSS feeds concurrently."""
@@ -151,39 +160,11 @@ class FinancialRSSService:
 
             return all_items
 
-    def _should_fetch(self) -> bool:
-        """Check if we should fetch new data based on cache duration."""
-        if not self.last_fetch:
-            return True
-        return time.time() - self.last_fetch.get("timestamp", 0) > self.cache_duration
-
     async def get_news(
         self,
         symbol_filter: Optional[List[str]] = None,
         source_filter: Optional[List[str]] = None,
         limit: Optional[int] = None,
         hours_back: Optional[int] = 24,
-    ) -> List[Dict]:
-        """
-        Get financial news with optional filtering.
-
-        Args:
-            symbol_filter: Filter by stock symbols
-            source_filter: Filter by news sources
-            limit: Maximum number of items to return
-            hours_back: Only return news from this many hours back
-
-        Returns:
-            List of news items as dictionaries
-        """
-        # Check cache first
-        if self._should_fetch():
-            log.info("Fetching fresh news data")
-            news_items = await self._fetch_all_feeds()
-            self.cache["news"] = news_items
-            self.last_fetch["timestamp"] = time.time()
-        else:
-            log.info("Using cached news data")
-            news_items = self.cache.get("news", [])
-
-        return [item.to_dict() for item in news_items]
+    ):
+        pass
