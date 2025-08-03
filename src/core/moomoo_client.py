@@ -6,8 +6,7 @@ import pandas
 from moomoo import RET_OK, OpenSecTradeContext, SecurityFirm, TrdMarket, TrdSide
 
 from src.core.orders.models import CurrentPosition, HistoricalOrder
-from src.core.utilities import get_logger
-from src.core.utilities.datetime_utils import FIRST_ORDER_DATE, get_current_datetime
+from src.core.utilities import MOOMOO_FIRST_ORDER_DATE, get_current_datetime, get_logger
 
 log = get_logger(__name__)
 
@@ -32,7 +31,7 @@ class MoomooClient:
         """Get historical orders and current positions."""
         with cls.get_trade_context() as trd_ctx:
             # Get historical orders
-            result_order_query, orders_data = trd_ctx.history_order_list_query(start=FIRST_ORDER_DATE, end=get_current_datetime())
+            result_order_query, orders_data = trd_ctx.history_order_list_query(start=MOOMOO_FIRST_ORDER_DATE, end=get_current_datetime())
 
             # Get current positions
             result_position_query, positions_data = trd_ctx.position_list_query()
@@ -52,7 +51,7 @@ class MoomooClient:
     @classmethod
     def get_historical_orders(cls):
         with cls.get_trade_context() as trd_ctx:
-            result, orders_data = trd_ctx.history_order_list_query(start=FIRST_ORDER_DATE, end=get_current_datetime())
+            result, orders_data = trd_ctx.history_order_list_query(start=MOOMOO_FIRST_ORDER_DATE, end=get_current_datetime())
 
             if result == RET_OK and isinstance(orders_data, pandas.DataFrame):
                 data_list = orders_data.to_dict(orient="records")
