@@ -1,7 +1,5 @@
 """OpenD process management utilities."""
 
-import logging
-import os
 import platform
 import subprocess
 from pathlib import Path
@@ -13,10 +11,6 @@ from src.core.utilities import get_logger
 log = get_logger(__name__)
 
 
-def get_opend_path():
-    return os.environ.get("MOOMOO_OPEND_CLIENT_PATH")
-
-
 def ensure_opend_running():
     """Check if OpenD is running and start it if not."""
     # Check if OpenD is already running
@@ -26,10 +20,6 @@ def ensure_opend_running():
             return True
 
     # If not running, start OpenD
-    opend_path = get_opend_path()
-    if not opend_path:
-        raise ValueError()
-
     if platform.system() == "Windows":
         opend_path = Path(__file__).parent.parent.parent / "moomoo_OpenD_9.2.5208_Windows" / "OpenD.exe"
         start_flags = {"creationflags": subprocess.CREATE_NEW_CONSOLE}
