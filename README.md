@@ -101,6 +101,12 @@ This project uses `uv` to manage python dependencies. Run the application and a 
 uv run python -m src.main
 ```
 
+# Tests 
+
+This project uses pytest for testing.
+
+Run tests using `uv run pytest`
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first
