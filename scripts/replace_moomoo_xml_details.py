@@ -22,11 +22,11 @@ MOOMOO_CONFIG_FILENAME = "OpenD.xml"
 
 
 def replace_xml_value(
-    xml_tree,
+    xml_tree: ET.ElementTree[ET.Element[str]],
     field_name: str,
     new_value: str,
     replace_if_this_value: str | None,
-) -> bool:
+):
     root = xml_tree.getroot()
     field = root.find(field_name)
 
