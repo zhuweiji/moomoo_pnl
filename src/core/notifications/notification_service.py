@@ -2,6 +2,8 @@ from enum import Enum
 
 import requests
 
+from src.core.utilities import NTFY_SH_TOPIC
+
 
 class PriorityEnum(str, Enum):
     urgent = "urgent"
@@ -20,7 +22,7 @@ def send_notification(
     priority: PriorityEnum = PriorityEnum.default,
     tags: str = "",
 ):
-    topic: str = "zhuhome_mpnl"
+    topic: str = NTFY_SH_TOPIC
     headers = {}
 
     if title:
@@ -38,4 +40,5 @@ def send_notification(
 
 
 if __name__ == "__main__":
+    send_notification(message="hello!", title="test message")
     send_notification(message="hello!", title="test message")

@@ -9,9 +9,8 @@ from fastapi.security import HTTPBasic
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from src.config.common_configs import SITE_PORT
 from src.core.moomoo_client import MoomooClient
-from src.core.utilities import ensure_opend_running, get_logger
+from src.core.utilities import SITE_PORT, ensure_opend_running, get_logger
 from src.routes.alerts import router as alert_router
 from src.routes.orders import router as trailing_stop_router
 from src.routes.positions import router as positions_router
