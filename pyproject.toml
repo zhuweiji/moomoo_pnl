@@ -17,7 +17,11 @@ dependencies = [
     "yfinance>=0.2.65",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
+    "aiohttp>=3.12.15",
 ]
 
 [tool.ruff]
 line-length = 150
+
+[tool.pytest.ini_options]
+pythonpath = './src'
