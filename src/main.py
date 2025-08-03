@@ -1,6 +1,5 @@
 """Main entry point for the PnL application."""
 
-import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -10,14 +9,14 @@ from fastapi.security import HTTPBasic
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from src.config.common_configs import SITE_PORT
 from src.core.moomoo_client import MoomooClient
-from src.core.utilities import get_logger
+from src.core.utilities import ensure_opend_running, get_logger
 from src.routes.alerts import router as alert_router
 from src.routes.orders import router as trailing_stop_router
 from src.routes.positions import router as positions_router
 from src.routes.stock_data import router as stock_data_router
 from src.routes.utils import get_current_username
-from src.utils.opend import ensure_opend_running
 
 log = get_logger(__name__)
 
@@ -106,7 +105,7 @@ if __name__ == "__main__":
         ensure_opend_running()
         import uvicorn
 
-        uvicorn.run(app, host="0.0.0.0", port=14231)
+        uvicorn.run(app, host="0.0.0.0", port=SITE_PORT)
     except Exception as e:
         log.exception(e)
     finally:

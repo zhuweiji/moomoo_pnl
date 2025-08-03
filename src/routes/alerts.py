@@ -1,29 +1,39 @@
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from src.alerts import global_task_service
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
 
-router = APIRouter()
+base_route = "/tasks"
+router = APIRouter(prefix=base_route)
 
 
-@router.get("/tasks/{task_id}/status")
+@router.get("")
+def get_all_tasks():
+    """Endpoint to get all tasks"""
+    return {taskid: task.to_dict() for taskid, task in global_task_service.get_all_tasks().items()}
+
+
+@router.get("/{task_id}")
 def get_task_status(task_id: str):
     """Endpoint to get task status"""
-    return global_task_service.get_task_status(task_id)
+    task = global_task_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task.to_dict()
 
 
-@router.post("/tasks/{task_id}/start")
+@router.post("/{task_id}/start")
 def start_task(task_id: str):
     """Endpoint to start a specific task"""
     global_task_service.start_task(task_id)
     return {"status": "Task started"}
 
 
-@router.post("/tasks/{task_id}/stop")
+@router.post("/{task_id}/stop")
 def stop_task(task_id: str):
     """Endpoint to stop a specific task"""
     global_task_service.stop_task(task_id)
