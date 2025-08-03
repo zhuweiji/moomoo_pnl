@@ -65,9 +65,7 @@ class CurrentPosition:
     today_sell_qty: float
     today_sell_val: float
     position_side: str
-    unrealized_pl: Union[
-        str, float
-    ]  # N/A treated as str, or it could be float if parsed differently
+    unrealized_pl: Union[str, float]  # N/A treated as str, or it could be float if parsed differently
     realized_pl: Union[str, float]  # Same as unrealized_pl
     currency: str
 
@@ -181,13 +179,9 @@ class RangeBucketOrder(BaseCustomOrder):
         """Generate the list of bucket prices."""
         if self.num_buckets:
             step = (self.end_price - self.start_price) / (self.num_buckets - 1)
-            return [
-                round(self.start_price + i * step, 4) for i in range(self.num_buckets)
-            ]
+            return [round(self.start_price + i * step, 4) for i in range(self.num_buckets)]
         else:
-            num_buckets = (
-                math.floor((self.end_price - self.start_price) / self.bucket_size) + 1
-            )
+            num_buckets = math.floor((self.end_price - self.start_price) / self.bucket_size) + 1
             return [
                 round(self.start_price + i * self.bucket_size, 4)
                 for i in range(num_buckets)
@@ -251,9 +245,7 @@ class CustomTrailingStopSellOrder:
             raise ValueError("Must specify either trailing_amount or trailing_percent")
         if trailing_amount is not None and trailing_amount <= 0:
             raise ValueError("Trailing amount must be positive")
-        if trailing_percent is not None and (
-            trailing_percent <= 0 or trailing_percent >= 100
-        ):
+        if trailing_percent is not None and (trailing_percent <= 0 or trailing_percent >= 100):
             raise ValueError("Trailing percent must be between 0 and 100")
         if min_price <= 0:
             raise ValueError("Minimum price must be positive")
@@ -296,11 +288,7 @@ class CustomTrailingStopSellOrder:
             return False
 
         # Check if conditions are met
-        return (
-            current_price <= trigger_price
-            and current_price >= self.min_price
-            and self.highest_price >= self.min_price
-        )
+        return current_price <= trigger_price and current_price >= self.min_price and self.highest_price >= self.min_price
 
 
 @dataclass
@@ -340,9 +328,7 @@ class CustomTrailingStopBuyOrder:
             raise ValueError("Must specify either trailing_amount or trailing_percent")
         if trailing_amount is not None and trailing_amount <= 0:
             raise ValueError("Trailing amount must be positive")
-        if trailing_percent is not None and (
-            trailing_percent <= 0 or trailing_percent >= 100
-        ):
+        if trailing_percent is not None and (trailing_percent <= 0 or trailing_percent >= 100):
             raise ValueError("Trailing percent must be between 0 and 100")
         if max_price <= 0:
             raise ValueError("Maximum price must be positive")
@@ -389,8 +375,4 @@ class CustomTrailingStopBuyOrder:
             return False
 
         # Check if conditions are met
-        return (
-            current_price <= trigger_price
-            and current_price <= self.max_price
-            and self.lowest_price <= self.max_price
-        )
+        return current_price <= trigger_price and current_price <= self.max_price and self.lowest_price <= self.max_price

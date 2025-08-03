@@ -39,12 +39,8 @@ class OrderManager:
         self.is_simulated_env = False
         self.orders: Dict[str, OrderType] = {}
         self.services: Dict[Type, OrderService] = {
-            CustomTrailingStopSellOrder: TrailingStopSellOrderService(
-                self.is_simulated_env
-            ),
-            CustomTrailingStopBuyOrder: TrailingStopBuyOrderService(
-                self.is_simulated_env
-            ),
+            CustomTrailingStopSellOrder: TrailingStopSellOrderService(self.is_simulated_env),
+            CustomTrailingStopBuyOrder: TrailingStopBuyOrderService(self.is_simulated_env),
         }
         self.repository = TrailingStopOrderRepository(self._get_storage_path())
         self.check_interval = check_interval_seconds
@@ -109,11 +105,7 @@ class OrderManager:
 
     def get_active_orders(self) -> List[OrderType]:
         """Get all active (waiting) orders."""
-        return [
-            order
-            for order in self.orders.values()
-            if self.services[type(order)].is_order_waiting(order)
-        ]
+        return [order for order in self.orders.values() if self.services[type(order)].is_order_waiting(order)]
 
     def get_all_orders(self) -> List[OrderType]:
         """Get all orders."""

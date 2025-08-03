@@ -98,9 +98,7 @@ class OrderRepository(JsonFileRepository[T]):
                     for field in ["created_at", "updated_at"]:
                         order_data[field] = datetime.fromisoformat(order_data[field])
                     if order_data.get("last_check_time"):
-                        order_data["last_check_time"] = datetime.fromisoformat(
-                            order_data["last_check_time"]
-                        )
+                        order_data["last_check_time"] = datetime.fromisoformat(order_data["last_check_time"])
 
                     # Determine order type and create appropriate object
                     order_type = self._determine_order_type(order_data)
@@ -109,9 +107,7 @@ class OrderRepository(JsonFileRepository[T]):
                         continue
 
                     # Convert string status back to enum
-                    order_data["status"] = self._get_status_enum(order_type)(
-                        order_data["status"]
-                    )
+                    order_data["status"] = self._get_status_enum(order_type)(order_data["status"])
 
                     # Create order object
                     order = order_type(**order_data)
@@ -139,9 +135,7 @@ class OrderRepository(JsonFileRepository[T]):
         raise ValueError(f"Unknown order type: {order_type}")
 
 
-class TrailingStopOrderRepository(
-    OrderRepository[CustomTrailingStopSellOrder | CustomTrailingStopBuyOrder]
-):
+class TrailingStopOrderRepository(OrderRepository[CustomTrailingStopSellOrder | CustomTrailingStopBuyOrder]):
     """Specific repository for trailing stop orders."""
 
     def __init__(self, storage_path: Path):

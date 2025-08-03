@@ -25,26 +25,16 @@ class TrailingStopSellOrderCreate(BaseModel):
     stock_code: str = Field(..., description="Stock code to create order for")
     min_price: float = Field(..., gt=0, description="Minimum price threshold")
     quantity: int = Field(..., gt=0, description="Number of shares to sell")
-    trailing_amount: Optional[float] = Field(
-        None, gt=0, description="Fixed amount to trail by"
-    )
-    trailing_percent: Optional[float] = Field(
-        None, gt=0, lt=100, description="Percentage to trail by"
-    )
+    trailing_amount: Optional[float] = Field(None, gt=0, description="Fixed amount to trail by")
+    trailing_percent: Optional[float] = Field(None, gt=0, lt=100, description="Percentage to trail by")
 
     @model_validator(mode="after")
     def validate_trailing_options(cls, model_instance):
         """Ensure only one of trailing_amount or trailing_percent is specified."""
-        if (
-            model_instance.trailing_amount is not None
-            and model_instance.trailing_percent is not None
-        ):
+        if model_instance.trailing_amount is not None and model_instance.trailing_percent is not None:
             raise ValueError("Cannot specify both trailing_amount and trailing_percent")
 
-        if (
-            model_instance.trailing_amount is None
-            and model_instance.trailing_percent is None
-        ):
+        if model_instance.trailing_amount is None and model_instance.trailing_percent is None:
             raise ValueError("Must specify either trailing_amount or trailing_percent")
 
         return model_instance
@@ -56,26 +46,16 @@ class TrailingStopBuyOrderCreate(BaseModel):
     stock_code: str = Field(..., description="Stock code to create order for")
     max_price: float = Field(..., gt=0, description="Maximum price threshold")
     quantity: int = Field(..., gt=0, description="Number of shares to buy")
-    trailing_amount: Optional[float] = Field(
-        None, gt=0, description="Fixed amount to trail by"
-    )
-    trailing_percent: Optional[float] = Field(
-        None, gt=0, lt=100, description="Percentage to trail by"
-    )
+    trailing_amount: Optional[float] = Field(None, gt=0, description="Fixed amount to trail by")
+    trailing_percent: Optional[float] = Field(None, gt=0, lt=100, description="Percentage to trail by")
 
     @model_validator(mode="after")
     def validate_trailing_options(cls, model_instance):
         """Ensure only one of trailing_amount or trailing_percent is specified."""
-        if (
-            model_instance.trailing_amount is not None
-            and model_instance.trailing_percent is not None
-        ):
+        if model_instance.trailing_amount is not None and model_instance.trailing_percent is not None:
             raise ValueError("Cannot specify both trailing_amount and trailing_percent")
 
-        if (
-            model_instance.trailing_amount is None
-            and model_instance.trailing_percent is None
-        ):
+        if model_instance.trailing_amount is None and model_instance.trailing_percent is None:
             raise ValueError("Must specify either trailing_amount or trailing_percent")
 
         return model_instance
@@ -92,10 +72,7 @@ class TrailingStopSellOrderUpdate(BaseModel):
     @model_validator(mode="after")
     def validate_trailing_options(cls, model_instance):
         """Ensure only one of trailing_amount or trailing_percent is specified."""
-        if (
-            model_instance.trailing_amount is not None
-            and model_instance.trailing_percent is not None
-        ):
+        if model_instance.trailing_amount is not None and model_instance.trailing_percent is not None:
             raise ValueError("Cannot specify both trailing_amount and trailing_percent")
 
         return model_instance
@@ -112,10 +89,7 @@ class TrailingStopBuyOrderUpdate(BaseModel):
     @model_validator(mode="after")
     def validate_trailing_options(cls, model_instance):
         """Ensure only one of trailing_amount or trailing_percent is specified."""
-        if (
-            model_instance.trailing_amount is not None
-            and model_instance.trailing_percent is not None
-        ):
+        if model_instance.trailing_amount is not None and model_instance.trailing_percent is not None:
             raise ValueError("Cannot specify both trailing_amount and trailing_percent")
 
         return model_instance
@@ -159,9 +133,7 @@ async def create_buy_order(order: TrailingStopBuyOrderCreate):
 async def list_sell_orders(status: Optional[CustomOrderStatus] = None):
     """List all trailing stop sell orders, optionally filtered by status."""
     orders = order_manager.get_all_orders()
-    orders = [
-        order for order in orders if isinstance(order, CustomTrailingStopSellOrder)
-    ]
+    orders = [order for order in orders if isinstance(order, CustomTrailingStopSellOrder)]
 
     if status:
         orders = [order for order in orders if order.status == status]
@@ -179,9 +151,7 @@ async def list_sell_orders(status: Optional[CustomOrderStatus] = None):
 async def list_buy_orders(status: Optional[CustomOrderStatus] = None):
     """List all trailing stop buy orders, optionally filtered by status."""
     orders = order_manager.get_all_orders()
-    orders = [
-        order for order in orders if isinstance(order, CustomTrailingStopBuyOrder)
-    ]
+    orders = [order for order in orders if isinstance(order, CustomTrailingStopBuyOrder)]
     if status:
         orders = [order for order in orders if order.status == status]
 
@@ -220,9 +190,7 @@ async def update_sell_order(order_id: str, update_data: TrailingStopSellOrderUpd
         raise HTTPException(status_code=404, detail="Sell order not found")
 
     if order.status != CustomOrderStatus.WAITING:
-        raise HTTPException(
-            status_code=400, detail=f"Cannot update order in status {order.status}"
-        )
+        raise HTTPException(status_code=400, detail=f"Cannot update order in status {order.status}")
 
     try:
         # Update fields if provided
@@ -251,9 +219,7 @@ async def update_buy_order(order_id: str, update_data: TrailingStopBuyOrderUpdat
         raise HTTPException(status_code=404, detail="Buy order not found")
 
     if order.status != CustomOrderStatus.WAITING:
-        raise HTTPException(
-            status_code=400, detail=f"Cannot update order in status {order.status}"
-        )
+        raise HTTPException(status_code=400, detail=f"Cannot update order in status {order.status}")
 
     try:
         # Update fields if provided

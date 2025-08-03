@@ -63,15 +63,11 @@ class TrailingStopSellOrderService(OrderService):
     def validate_new_order(self, order: CustomTrailingStopSellOrder, positions) -> None:
         position = [i for i in positions if i.code == order.stock_code]
         if not position:
-            raise ValueError(
-                f"Unable to find matching position for sell order: {order.stock_code}"
-            )
+            raise ValueError(f"Unable to find matching position for sell order: {order.stock_code}")
 
         matching_position = position[0]
         if matching_position.can_sell_qty < order.quantity:
-            raise ValueError(
-                f"Insufficient shares. Own: {matching_position.can_sell_qty}, Required: {order.quantity}"
-            )
+            raise ValueError(f"Insufficient shares. Own: {matching_position.can_sell_qty}, Required: {order.quantity}")
 
     def can_cancel_order(self, order: CustomTrailingStopSellOrder) -> bool:
         return order.status == CustomOrderStatus.WAITING
@@ -82,15 +78,11 @@ class TrailingStopSellOrderService(OrderService):
     def get_current_price(self, order: CustomTrailingStopSellOrder, positions):
         matching_positions = [i for i in positions if i.code == order.stock_code]
         if not matching_positions:
-            raise ValueError(
-                "Cannot get data about a stock that hasn't already been bought"
-            )
+            raise ValueError("Cannot get data about a stock that hasn't already been bought")
         return matching_positions[0].nominal_price
 
     def execute_order(self, order: CustomTrailingStopSellOrder) -> None:
-        simulated_trading_env = (
-            TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
-        )
+        simulated_trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
 
         try:
             order.status = CustomOrderStatus.TRIGGERED
@@ -125,9 +117,7 @@ class TrailingStopSellOrderService(OrderService):
             self.set_error_status(order, str(e))
             raise
 
-    def set_error_status(
-        self, order: CustomTrailingStopSellOrder, error_msg: str
-    ) -> None:
+    def set_error_status(self, order: CustomTrailingStopSellOrder, error_msg: str) -> None:
         order.status = CustomOrderStatus.ERROR
         order.error_message = error_msg
         order.updated_at = datetime.now()
@@ -160,9 +150,7 @@ class TrailingStopBuyOrderService(OrderService):
         return get_stock_price(order.stock_code)
 
     def execute_order(self, order: CustomTrailingStopBuyOrder) -> None:
-        simulated_trading_env = (
-            TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
-        )
+        simulated_trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
 
         try:
             order.status = CustomOrderStatus.TRIGGERED
@@ -197,9 +185,7 @@ class TrailingStopBuyOrderService(OrderService):
             self.set_error_status(order, str(e))
             raise
 
-    def set_error_status(
-        self, order: CustomTrailingStopBuyOrder, error_msg: str
-    ) -> None:
+    def set_error_status(self, order: CustomTrailingStopBuyOrder, error_msg: str) -> None:
         order.status = CustomOrderStatus.ERROR
         order.error_message = error_msg
         order.updated_at = datetime.now()

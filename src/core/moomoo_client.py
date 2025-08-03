@@ -32,22 +32,14 @@ class MoomooClient:
         """Get historical orders and current positions."""
         with cls.get_trade_context() as trd_ctx:
             # Get historical orders
-            result_order_query, orders_data = trd_ctx.history_order_list_query(
-                start=FIRST_ORDER_DATE, end=get_current_datetime()
-            )
+            result_order_query, orders_data = trd_ctx.history_order_list_query(start=FIRST_ORDER_DATE, end=get_current_datetime())
 
             # Get current positions
             result_position_query, positions_data = trd_ctx.position_list_query()
 
-            if (
-                result_order_query == RET_OK
-                and result_position_query == RET_OK
-                and not isinstance(positions_data, str)
-            ):
+            if result_order_query == RET_OK and result_position_query == RET_OK and not isinstance(positions_data, str):
                 # Create a dictionary of current positions for easy lookup
-                positions_dict = {
-                    row["code"]: row for _, row in positions_data.iterrows()
-                }
+                positions_dict = {row["code"]: row for _, row in positions_data.iterrows()}
                 return orders_data, positions_dict
             else:
                 log.error(
@@ -60,9 +52,7 @@ class MoomooClient:
     @classmethod
     def get_historical_orders(cls):
         with cls.get_trade_context() as trd_ctx:
-            result, orders_data = trd_ctx.history_order_list_query(
-                start=FIRST_ORDER_DATE, end=get_current_datetime()
-            )
+            result, orders_data = trd_ctx.history_order_list_query(start=FIRST_ORDER_DATE, end=get_current_datetime())
 
             if result == RET_OK and isinstance(orders_data, pandas.DataFrame):
                 data_list = orders_data.to_dict(orient="records")
@@ -118,18 +108,14 @@ class MoomooClient:
                 pnl_dict[code]["net_quantity"] -= dealt_qty
 
         for code in pnl_dict:
-            pnl_dict[code]["closed_position_value"] = (
-                pnl_dict[code]["total_sell"] - pnl_dict[code]["total_buy"]
-            )
+            pnl_dict[code]["closed_position_value"] = pnl_dict[code]["total_sell"] - pnl_dict[code]["total_buy"]
 
         # # Update with current position information
         for code, position in positions.items():
             if code in pnl_dict:
                 pnl_dict[code]["current_price"] = position["nominal_price"]
                 if pnl_dict[code]["net_quantity"]:
-                    pnl_dict[code]["current_position_value"] = (
-                        pnl_dict[code]["net_quantity"] * pnl_dict[code]["current_price"]
-                    )
+                    pnl_dict[code]["current_position_value"] = pnl_dict[code]["net_quantity"] * pnl_dict[code]["current_price"]
 
                     if not position["qty"] == pnl_dict[code]["net_quantity"]:
                         log.warning(
@@ -139,10 +125,7 @@ class MoomooClient:
                         )
 
         for code in pnl_dict:
-            pnl_dict[code]["total_profit"] = (
-                pnl_dict[code]["closed_position_value"]
-                + pnl_dict[code]["current_position_value"]
-            )
+            pnl_dict[code]["total_profit"] = pnl_dict[code]["closed_position_value"] + pnl_dict[code]["current_position_value"]
 
             for k, v in pnl_dict[code].items():
                 if isinstance(v, float):

@@ -38,18 +38,14 @@ class LogErrorsMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         if response.status_code >= 400:
             # Log error details
-            log.error(
-                f"Error: {response.status_code}, Path: {request.url.path}, Method: {request.method}, Headers: {dict(request.headers)}"
-            )
+            log.error(f"Error: {response.status_code}, Path: {request.url.path}, Method: {request.method}, Headers: {dict(request.headers)}")
         return response
 
 
 app.add_middleware(LogErrorsMiddleware)
 
 # Include routers
-app.include_router(
-    trailing_stop_router, prefix="/api/trailing-stop", tags=["trailing-stop"]
-)
+app.include_router(trailing_stop_router, prefix="/api/trailing-stop", tags=["trailing-stop"])
 app.include_router(positions_router, prefix="/api/positions", tags=["positions"])
 app.include_router(stock_data_router, prefix="/api/stock-data", tags=["stock-data"])
 app.include_router(alert_router, prefix="/api/alerts", tags=["alerts"])

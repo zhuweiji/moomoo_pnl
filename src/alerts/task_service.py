@@ -16,9 +16,7 @@ class TaskConfig(BaseModel):
 
     func: Callable[[], Any]  # The function to run
     interval_seconds: int  # How often to run the task
-    condition: Optional[Callable[[Any], bool]] = (
-        None  # Optional condition to trigger alert
-    )
+    condition: Optional[Callable[[Any], bool]] = None  # Optional condition to trigger alert
     alert_message: Optional[str] = None  # Custom alert message
     last_run: Optional[datetime] = None
     name: Optional[str] = None  # Readable short name for humans
@@ -83,10 +81,7 @@ class TaskService:
 
                 # Check if condition is met and send alert if needed
                 if task_config.condition and task_config.condition(result):
-                    alert_msg = (
-                        task_config.alert_message
-                        or f"Alert for task {task_config.name}"
-                    )
+                    alert_msg = task_config.alert_message or f"Alert for task {task_config.name}"
                     log.info(f"sent alert for task function {task_config.name}")
 
                     send_notification(
@@ -132,9 +127,7 @@ class TaskService:
         # If using a separate thread
         if use_thread:
             if not self._event_loop:
-                self._loop_thread = threading.Thread(
-                    target=self._start_event_loop, daemon=True
-                )
+                self._loop_thread = threading.Thread(target=self._start_event_loop, daemon=True)
                 self._loop_thread.start()
 
                 # Give the thread a moment to start
@@ -144,9 +137,7 @@ class TaskService:
                     time.sleep(0.1)
 
             # Schedule the task in the separate event loop
-            task = self._event_loop.call_soon_threadsafe(
-                self._event_loop.create_task, self._run_task(task_id)
-            )
+            task = self._event_loop.call_soon_threadsafe(self._event_loop.create_task, self._run_task(task_id))
             self.running_tasks[task_id] = task  # type: ignore
 
         # If not using a thread, try to use current event loop
@@ -156,9 +147,7 @@ class TaskService:
                 task = loop.create_task(self._run_task(task_id))
                 self.running_tasks[task_id] = task
             except RuntimeError:
-                log.error(
-                    "No running event loop. Use use_thread=True or run in an async context."
-                )
+                log.error("No running event loop. Use use_thread=True or run in an async context.")
                 raise
 
     def stop_task(self, task_id: str):
