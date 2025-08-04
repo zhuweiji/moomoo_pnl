@@ -121,7 +121,7 @@ class FinancialRSSDataService(ThreadedService):
         # config
         self.max_concurrent_requests = max_concurrent_requests
         self.timeout = timeout
-        self.rss_feeds = RSSFeedSources
+        self.rss_feeds: dict[str, url] = {source.name: source.value for source in RSSFeedSources}
 
         self.rss_feed_service = RSSFeedQueryService(stale_after=timedelta(seconds=query_interval_seconds - 1))
 
@@ -130,16 +130,16 @@ class FinancialRSSDataService(ThreadedService):
 
     def add_source(self, name: str, url: url):
         """Add a new RSS source."""
-        # easier to do if sources are implemented/persisted in db instead of an enum
-        raise NotImplementedError
+        self.rss_feeds[name] = url
 
-    def remove_source(self, name: str):
+    def remove_source_by_name(self, name: str):
         """Remove an RSS source."""
-        raise NotImplementedError
+        if name in self.rss_feeds:
+            del self.rss_feeds[name]
 
     def get_sources(self) -> dict[str, url]:
         """Get list of available news sources."""
-        return {source.name: source.value for source in self.rss_feeds}
+        return self.rss_feeds
 
     def run(self):
         """Refreshes the data from its sources"""
@@ -148,9 +148,8 @@ class FinancialRSSDataService(ThreadedService):
     def _fetch_all_feeds(self) -> List[FinancialNewsItem]:
         """Fetch all RSS feeds concurrently."""
         result = []
-        for source in self.rss_feeds:
-            rss_url: url = source.value
-            result.append(self.rss_feed_service.query_feed(url=rss_url))
+        for rss_feed_url in self.rss_feeds.values():
+            result.append(self.rss_feed_service.query_feed(url=rss_feed_url))
 
         return result
 
@@ -163,8 +162,7 @@ class FinancialRSSDataService(ThreadedService):
         hours_back: Optional[int] = 24,
     ):
         result: Collection[FinancialNewsItem] = []
-        for source in self.rss_feeds:
-            rss_feed_url = source.value
+        for rss_feed_url in self.rss_feeds.values():
             self.rss_feed_service.get_all_previous_data_from_feed(rss_feed_url)
         return result
 
