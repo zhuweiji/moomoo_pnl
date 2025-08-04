@@ -1,9 +1,11 @@
 from datetime import datetime
+from typing import TypeAlias
 
 from dateutil import parser
 
 from src.core.utilities import DEFAULT_TZ
 
+datetime_iso8601_str: TypeAlias = str
 
 def get_current_datetime():
     """Get current datetime in the format required by Moomoo API."""
@@ -43,3 +45,16 @@ def datetime_from_iso8601(dt_str: str):
 
     except ValueError:
         return None
+
+
+def datetime_to_iso8601_str(dt:datetime) -> str:
+    """
+    Convert a datetime object to ISO 8601 formatted string.
+    
+    Args:
+        dt (datetime): The datetime object to convert
+        
+    Returns:
+        str: ISO 8601 formatted datetime string
+    """
+    return dt.isoformat()

@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import time
 from abc import ABC, abstractmethod
 
 from .config.constants import INTERNAL_THREADED_SERVICE_RUN_SECONDS
@@ -48,27 +49,20 @@ class ThreadedService(ABC):
         self.monitor_thread = None
 
     @abstractmethod
-    async def run(self, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """Async method to be implemented by subclasses."""
         pass
 
     def _monitor_loop(self) -> None:
         """Thread target: runs the event loop and periodically calls run()."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        while self.running:
+            log.debug("polling..")
 
-        async def periodic_runner():
-            while self.running:
-                try:
-                    await self.run()
-                except Exception as e:
-                    print(f"Error in async monitor loop: {e}")
-                await asyncio.sleep(self.check_interval_seconds)
-
-        try:
-            loop.run_until_complete(periodic_runner())
-        finally:
-            loop.close()
+            try:
+                self.run()
+            except Exception as e:
+                log.error(f"Error in monitor loop: {e}")
+            time.sleep(self.check_interval_seconds)
 
     def start(self) -> None:
         """Start the monitoring thread."""
