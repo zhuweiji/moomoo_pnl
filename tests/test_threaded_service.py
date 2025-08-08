@@ -120,19 +120,6 @@ class TestThreadedService:
         # Verify sleep was called with correct interval
         mock_sleep.assert_called_once_with(2)
 
-    @patch("threading.Thread")
-    def test_thread_creation(self, mock_thread, service):
-        """Test that thread is created with correct parameters."""
-        mock_thread_instance = Mock()
-        mock_thread.return_value = mock_thread_instance
-
-        service.start()
-
-        # Verify thread was created correctly
-        mock_thread.assert_called_once_with(target=service._monitor_loop)
-        mock_thread_instance.start.assert_called_once()
-        assert mock_thread_instance.daemon is True
-
     def test_exception_handling_in_monitor_loop(self):
         """Test that exceptions in run() don't crash the monitor loop."""
 

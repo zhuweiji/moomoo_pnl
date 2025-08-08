@@ -3,7 +3,7 @@ name = "moomoo-pnl"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "~=3.11.0"
 dependencies = [
     "fastapi>=0.115.5",
     "moomoo-api>=8.7.4708",

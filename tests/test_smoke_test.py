@@ -24,7 +24,8 @@ def test_run_smoke_test():
     process = None
     try:
         # Start the service as a subprocess
-        process = subprocess.Popen([sys.executable, "-m", str(main_py_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        process = subprocess.Popen([sys.executable, "-m", main_py_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
 
         # Wait for 5 seconds
         time.sleep(5)
@@ -33,7 +34,7 @@ def test_run_smoke_test():
         poll_result = process.poll()
 
         if poll_result is None:
-            return None
+            return
         else:
             log.exception(f"Service exited with code {poll_result}")
 
