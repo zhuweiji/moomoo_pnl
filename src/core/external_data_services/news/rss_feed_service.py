@@ -171,6 +171,8 @@ class FinancialRSSDataService(ThreadedService):
 
 if __name__ == "__main__":
     s = FinancialRSSDataService(query_interval_seconds=60 * 10)
+    # start the service, which makes it poll for new data every query_interval_seconds
     s.start()
 
+    # get all the news that we collected
     print(s.get_news())
