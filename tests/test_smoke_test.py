@@ -33,7 +33,7 @@ def test_run_smoke_test():
         poll_result = process.poll()
 
         if poll_result is None:
-            return True
+            return
         else:
             log.exception(f"Service exited with code {poll_result}")
 

@@ -1,7 +1,17 @@
 import time
 from datetime import timedelta
 
+import pytest
+
 from src.core.utilities import TimedCache
+
+
+@pytest.fixture
+def idempotent_fetch_func():
+    def f():
+        return 42
+
+    return f
 
 
 class TestTimedCache:
@@ -59,6 +69,24 @@ class TestTimedCache:
         time.sleep(0.1)
         value2 = cache.get_or_fetch("test", fetch_func, timedelta(microseconds=1))
         assert value2 == 2
+
+    def test_get_or_fetch_with_duplicate_entries(self, idempotent_fetch_func):
+        cache = TimedCache[str, int]()
+        key = "test"
+
+        # First fetch
+        r = cache.get_or_fetch(key, idempotent_fetch_func, timedelta(microseconds=1))
+        r1 = cache.get_all_from_key(key)
+        assert r
+        assert r1
+        assert r == r1[0][0]
+        assert len(r1) == 1
+
+        cache.get_or_fetch(key, idempotent_fetch_func, timedelta(microseconds=1))
+        r2 = cache.get_all_from_key(key)
+
+        assert r2
+        assert len(r2) == 1
 
     def test_get_all_multiple(self):
         cache = TimedCache[str, int]()
