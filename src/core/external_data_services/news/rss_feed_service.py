@@ -28,7 +28,7 @@ log = get_logger(__name__)
 url: TypeAlias = str
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class FinancialNewsItem:
     """Represents a single news item from an RSS feed."""
 
@@ -50,13 +50,13 @@ class RSSFeedQueryService:
     but data will be retrieved from cache if there is recent data available.
     """
 
-    cache = ThreadSafeTimedCache[url, Collection[FinancialNewsItem]]()
+    cache = ThreadSafeTimedCache[url, tuple[FinancialNewsItem]]()
 
     def __init__(self, stale_after: timedelta) -> None:
         self.query_interval = stale_after
 
     def get_all_previous_data_from_feed(self, url: url):
-        previous_data_with_fetched_timestamps = self.cache.get_all(url)
+        previous_data_with_fetched_timestamps = self.cache.get_all_from_key(url)
         if not previous_data_with_fetched_timestamps:
             return []
 
@@ -70,7 +70,7 @@ class RSSFeedQueryService:
         return self.cache.get_or_fetch(key=url, fetch_func=lambda: self._query_feed(url), max_age=self.query_interval)
 
     @classmethod
-    def _query_feed(cls, url: str) -> List[FinancialNewsItem]:
+    def _query_feed(cls, url: str) -> tuple[FinancialNewsItem]:
         """Fetch and parse a single RSS feed."""
         response = requests.get(url=url)
         content = response.text
@@ -102,7 +102,7 @@ class RSSFeedQueryService:
             items.append(news_item)
 
         log.info(f"Fetched {len(items)} items from {url}")
-        return items
+        return tuple(items)
 
 
 class FinancialRSSDataService(ThreadedService):
@@ -145,12 +145,14 @@ class FinancialRSSDataService(ThreadedService):
         """Refreshes the data from its sources"""
         self._fetch_all_feeds()
 
-    def _fetch_all_feeds(self) -> List[FinancialNewsItem]:
-        """Fetch all RSS feeds concurrently."""
+    def _fetch_all_feeds(self) -> list[FinancialNewsItem]:
+        """Fetch all RSS feeds"""
         result = []
         for rss_feed_url in self.rss_feeds.values():
-            result.append(self.rss_feed_service.query_feed(url=rss_feed_url))
-
+            try:
+                result.extend(self.rss_feed_service.query_feed(url=rss_feed_url))
+            except Exception as e:
+                log.error(e)
         return result
 
     def get_news(
@@ -163,9 +165,12 @@ class FinancialRSSDataService(ThreadedService):
     ):
         result: Collection[FinancialNewsItem] = []
         for rss_feed_url in self.rss_feeds.values():
-            self.rss_feed_service.get_all_previous_data_from_feed(rss_feed_url)
+            result.extend(self.rss_feed_service.get_all_previous_data_from_feed(rss_feed_url))
         return result
 
 
 if __name__ == "__main__":
-    s = FinancialRSSDataService()
+    s = FinancialRSSDataService(query_interval_seconds=60 * 10)
+    s.start()
+
+    print(s.get_news())

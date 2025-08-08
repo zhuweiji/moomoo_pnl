@@ -36,6 +36,7 @@ class TimedCache(Generic[K, V]):
 
     def __init__(self):
         self._cache: dict[K, list[tuple[V, datetime]]] = defaultdict(list)
+        self.values_in_cache = set()
 
     def get_or_fetch(self, key: K, fetch_func: Callable[[], V], max_age: timedelta) -> V:
         """
@@ -59,10 +60,12 @@ class TimedCache(Generic[K, V]):
 
         # Fetch new value if not in cache or stale
         new_value = fetch_func()
-        self._cache[key].append((new_value, now))
+        if new_value not in self.values_in_cache:
+            self._cache[key].append((new_value, now))
+            self.values_in_cache.add(new_value)
         return new_value
 
-    def get_all(self, key: K):
+    def get_all_from_key(self, key: K):
         """Retrieves all previously fetched vales for a given key"""
         return self._cache.get(key, None)
 

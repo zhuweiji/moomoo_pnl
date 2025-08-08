@@ -12,7 +12,7 @@ class TestTimedCache:
     def test_get_or_fetch_no_values_in_cache(self):
         cache = TimedCache[str, int]()
 
-        assert not cache.get_all("test")
+        assert not cache.get_all_from_key("test")
 
     def test_get_or_fetch_single(self):
         cache = TimedCache[str, int]()
@@ -34,7 +34,7 @@ class TestTimedCache:
             return 42
 
         cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
-        data = cache.get_all("test")
+        data = cache.get_all_from_key("test")
 
         assert data, "should have one value in cache"
         values = [i[0] for i in data]
@@ -74,7 +74,7 @@ class TestTimedCache:
         time.sleep(0.1)
         cache.get_or_fetch("test", fetch_func, timedelta(microseconds=1))
 
-        data = cache.get_all("test")
+        data = cache.get_all_from_key("test")
         assert data, "should have one value in cache"
         values = [i[0] for i in data]
 
@@ -91,7 +91,7 @@ class TestTimedCache:
         cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
         cache.invalidate("test")
 
-        assert cache.get_all("test") is None
+        assert cache.get_all_from_key("test") is None
 
     def test_clear(self):
         cache = TimedCache[str, int]()
@@ -103,5 +103,5 @@ class TestTimedCache:
         cache.get_or_fetch("test2", fetch_func, timedelta(minutes=5))
 
         cache.clear()
-        assert cache.get_all("test1") is None
-        assert cache.get_all("test2") is None
+        assert cache.get_all_from_key("test1") is None
+        assert cache.get_all_from_key("test2") is None
