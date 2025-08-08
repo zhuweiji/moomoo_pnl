@@ -180,7 +180,9 @@ class RangeBucketOrder(BaseCustomOrder):
         if self.num_buckets:
             step = (self.end_price - self.start_price) / (self.num_buckets - 1)
             return [round(self.start_price + i * step, 4) for i in range(self.num_buckets)]
+
         else:
+            assert self.bucket_size
             num_buckets = math.floor((self.end_price - self.start_price) / self.bucket_size) + 1
             return [
                 round(self.start_price + i * self.bucket_size, 4)

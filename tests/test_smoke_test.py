@@ -26,6 +26,7 @@ def test_run_smoke_test():
         # Start the service as a subprocess
         process = subprocess.Popen([sys.executable, "-m", main_py_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
+
         # Wait for 5 seconds
         time.sleep(5)
 
