@@ -169,21 +169,11 @@ class TestJsonFileRepository:
         assert result[2].data == {"id": 3, "name": "item3"}
 
     def test_load_when_file_does_not_exist(self):
-        """Test that load creates parent directories if they don't exist."""
         nested_path = Path(self.temp_dir.name) / "nested" / "path" / "test.json"
         repository = JsonFileRepository(nested_path, self.item_class)
 
-        # This should not raise an error even though the file doesn't exist
-        with pytest.raises(FileNotFoundError):
-            repository.get_all()
-
-    def test_load_file_not_found(self):
-        """Test load handles missing file."""
-        non_existent_path = Path(self.temp_dir.name) / "missing.json"
-        repository = JsonFileRepository(non_existent_path, self.item_class)
-
-        with pytest.raises(FileNotFoundError):
-            repository.get_all()
+        # no error should be raised
+        repository.get_all()
 
     @patch("builtins.open", side_effect=IOError("Permission denied"))
     def test_load_handles_file_read_error(self, mock_file):

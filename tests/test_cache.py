@@ -30,11 +30,11 @@ class TestTimedCache:
         def fetch_func():
             return 42
 
-        value = cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
+        value, fetched_time = cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
         assert value == 42
 
         # Should return cached value
-        cached = cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
+        cached, fetched_time = cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
         assert cached == 42
 
     def test_get_all_single(self):
@@ -62,12 +62,12 @@ class TestTimedCache:
             return counter
 
         # First fetch
-        value1 = cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
+        value1, fetched_time = cache.get_or_fetch("test", fetch_func, timedelta(minutes=5))
         assert value1 == 1
 
         # Force expiration
         time.sleep(0.1)
-        value2 = cache.get_or_fetch("test", fetch_func, timedelta(microseconds=1))
+        value2, fetched_time = cache.get_or_fetch("test", fetch_func, timedelta(microseconds=1))
         assert value2 == 2
 
     def test_get_or_fetch_with_duplicate_entries(self, idempotent_fetch_func):
@@ -75,7 +75,7 @@ class TestTimedCache:
         key = "test"
 
         # First fetch
-        r = cache.get_or_fetch(key, idempotent_fetch_func, timedelta(microseconds=1))
+        r, fetched_time = cache.get_or_fetch(key, idempotent_fetch_func, timedelta(microseconds=1))
         r1 = cache.get_all_from_key(key)
         assert r
         assert r1
