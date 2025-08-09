@@ -6,7 +6,7 @@ from pathlib import Path
 
 import psutil
 
-from src.core.utilities import get_logger
+from src.core.utilities import get_logger, top_level_dir
 
 log = get_logger(__name__)
 
@@ -21,10 +21,10 @@ def ensure_opend_running():
 
     # If not running, start OpenD
     if platform.system() == "Windows":
-        opend_path = Path(__file__).parent.parent.parent / "moomoo_OpenD_9.2.5208_Windows" / "OpenD.exe"
+        opend_path = top_level_dir / "moomoo_OpenD_9.2.5208_Windows" / "OpenD.exe"
         start_flags = {"creationflags": subprocess.CREATE_NEW_CONSOLE}
     else:
-        opend_path = Path(__file__).parent.parent.parent / "moomoo_OpenD_9.2.5208_Ubuntu16.04" / "OpenD"
+        opend_path = top_level_dir / "moomoo_OpenD_9.2.5208_Ubuntu16.04" / "OpenD"
         start_flags = {}
 
     if not opend_path.exists():

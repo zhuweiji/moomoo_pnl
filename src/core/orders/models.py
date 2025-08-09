@@ -69,6 +69,11 @@ class CurrentPosition:
     realized_pl: Union[str, float]  # Same as unrealized_pl
     currency: str
 
+    position_market: str
+    average_cost: float
+    diluted_cost: float
+    pl_ratio_avg_cost: float
+
 
 class CustomOrderStatus(Enum):
     """Status of a custom order."""
