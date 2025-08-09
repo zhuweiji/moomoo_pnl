@@ -38,7 +38,7 @@ class TimedCache(Generic[K, V]):
         self._cache: dict[K, list[tuple[V, datetime]]] = defaultdict(list)
         self.values_in_cache = set()
 
-    def get_or_fetch(self, key: K, fetch_func: Callable[[], V], max_age: timedelta) -> V:
+    def get_or_fetch(self, key: K, fetch_func: Callable[[], V], max_age: timedelta) -> tuple[V, datetime]:
         """
         Get item from cache if fresh, otherwise fetch new value.
 
@@ -56,18 +56,21 @@ class TimedCache(Generic[K, V]):
             previous_values = self._cache[key]
             latest_value, latest_timestamp = previous_values[-1]
             if now - latest_timestamp <= max_age:
-                return latest_value
+                return latest_value, now
 
         # Fetch new value if not in cache or stale
         new_value = fetch_func()
         if new_value not in self.values_in_cache:
             self._cache[key].append((new_value, now))
             self.values_in_cache.add(new_value)
-        return new_value
+        return new_value, now
 
     def get_all_from_key(self, key: K):
         """Retrieves all previously fetched vales for a given key"""
         return self._cache.get(key, None)
+
+    def get_latest(self, key: K):
+        return self._cache.get(key, [])[-1]
 
     def invalidate(self, key: K) -> None:
         """Remove an item from the cache"""
@@ -85,7 +88,7 @@ class ThreadSafeTimedCache(TimedCache[K, V]):
         super().__init__()
         self._lock = Lock()
 
-    def get_or_fetch(self, key: K, fetch_func: Callable[[], V], max_age: timedelta) -> V:
+    def get_or_fetch(self, key: K, fetch_func: Callable[[], V], max_age: timedelta) -> tuple[V, datetime]:
         with self._lock:
             return super().get_or_fetch(key, fetch_func, max_age)
 

@@ -1,6 +1,6 @@
 import dotenv
 
-from .project_paths import top_level_dir
+from .project_paths import TOP_LEVEL_DIR
 
-print(f"loading dotenv {top_level_dir / '.env'}")
-dotenv.load_dotenv(top_level_dir / ".env")
+print(f"loading dotenv {TOP_LEVEL_DIR / '.env'}")
+dotenv.load_dotenv(TOP_LEVEL_DIR / ".env")
