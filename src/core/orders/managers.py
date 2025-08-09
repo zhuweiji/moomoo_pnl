@@ -1,6 +1,5 @@
 """Manager for trailing stop orders."""
 
-import logging
 import threading
 import time
 from datetime import datetime

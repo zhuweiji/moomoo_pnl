@@ -13,64 +13,31 @@ from src.core.utilities import (
     DEFAULT_TZ,
     EXTERNAL_SERVICE_DEFAULT_TIMEOUT_SECONDS,
     EXTERNAL_SERVICE_MAX_CONCURRENT_REQUESTS,
+    FINANCIAL_NEWS_JSON_FILEPATH,
     RSS_FEED_REFRESH_INTERVAL_SECONDS,
     RSSFeedSources,
+    SingletonThreadedService,
     ThreadedService,
     ThreadSafeTimedCache,
+    datetime_from_iso8601,
     datetime_iso8601_str,
     datetime_to_iso8601_str,
     get_logger,
+    url,
 )
+from src.financial_news.repositories import FinancialNewItemJsonFileRepository
+
+from .models import FinancialNewsItem
 
 # Configure logging
 log = get_logger(__name__)
 
-url: TypeAlias = str
-
-
-@dataclass(eq=True, frozen=True)
-class FinancialNewsItem:
-    """Represents a single news item from an RSS feed."""
-
-    title: str
-    description: str
-    link: str
-    source: url
-    hash_id: str  # Unique identifier
-    published: datetime | None = None
-
-    def to_dict(self) -> Dict:
-        return asdict(self)
-
 
 class RSSFeedQueryService:
-    """Perform queries to RSS Feeds with built-in caching.
-
-    Multiple instances of the service can be created and can attempt to fetch data from RSS feeds,
-    but data will be retrieved from cache if there is recent data available.
-    """
-
-    cache = ThreadSafeTimedCache[url, tuple[FinancialNewsItem]]()
-
-    def __init__(self, stale_after: timedelta) -> None:
-        self.query_interval = stale_after
-
-    def get_all_previous_data_from_feed(self, url: url):
-        previous_data_with_fetched_timestamps = self.cache.get_all_from_key(url)
-        if not previous_data_with_fetched_timestamps:
-            return []
-
-        data: Collection[FinancialNewsItem] = []
-        for feed_data in previous_data_with_fetched_timestamps:
-            news_items, fetched_timestamp = feed_data
-            data.extend(news_items)
-        return data
-
-    def query_feed(self, url: str):
-        return self.cache.get_or_fetch(key=url, fetch_func=lambda: self._query_feed(url), max_age=self.query_interval)
+    """Perform queries to RSS Feeds"""
 
     @classmethod
-    def _query_feed(cls, url: str) -> tuple[FinancialNewsItem]:
+    def query_feed(cls, url: str) -> tuple[FinancialNewsItem]:
         """Fetch and parse a single RSS feed."""
         response = requests.get(url=url)
         content = response.text
@@ -85,11 +52,8 @@ class RSSFeedQueryService:
             link = getattr(entry, "link", "")
 
             # Handle publication date
-            # pub_date = getattr(entry, "published", "") or getattr(entry, "updated", "")
-            pub_date = None
-
-            # Create unique identifier
-            hash_id = hashlib.md5(f"{title}{link}{pub_date}".encode()).hexdigest()
+            pub_date_str = getattr(entry, "published", "") or getattr(entry, "updated", "")
+            pub_date = datetime_from_iso8601(pub_date_str)
 
             news_item = FinancialNewsItem(
                 title=title,
@@ -97,7 +61,6 @@ class RSSFeedQueryService:
                 link=link,
                 published=pub_date,
                 source=url,
-                hash_id=hash_id,
             )
             items.append(news_item)
 
@@ -105,10 +68,23 @@ class RSSFeedQueryService:
         return tuple(items)
 
 
-class FinancialRSSDataService(ThreadedService):
-    """Provides consolidated access to all feeds registered in the app
+class FinancialRSSDataService(SingletonThreadedService):
+    """Provides consolidated access to all feeds registered in the app with built-in caching.
 
-    Periodically queries the feeds to keep the data up to date"""
+    Multiple instances of the service can be created and can attempt to fetch data from RSS feeds,
+    but data will be retrieved from cache if there is recent data available.
+
+    Periodically queries the feeds to keep the data up to date
+
+
+    On startup: refreshes cache with old data from repository
+    Every query_interval_seconds seconds, queries for new da
+    """
+
+    data: set[FinancialNewsItem] = set()
+    repository = FinancialNewItemJsonFileRepository(storage_path=FINANCIAL_NEWS_JSON_FILEPATH, item_class=FinancialNewsItem)
+
+    rss_feed_service = RSSFeedQueryService
 
     def __init__(
         self,
@@ -123,10 +99,9 @@ class FinancialRSSDataService(ThreadedService):
         self.timeout = timeout
         self.rss_feeds: dict[str, url] = {source.name: source.value for source in RSSFeedSources}
 
-        self.rss_feed_service = RSSFeedQueryService(stale_after=timedelta(seconds=query_interval_seconds - 1))
-
-        # internals
-        self.data: dict[url, Collection[FinancialNewsItem]] = {}
+    def start(self):
+        super().start()
+        self.data.update(self.repository.get_all())
 
     def add_source(self, name: str, url: url):
         """Add a new RSS source."""
@@ -143,17 +118,17 @@ class FinancialRSSDataService(ThreadedService):
 
     def run(self):
         """Refreshes the data from its sources"""
-        self._fetch_all_feeds()
+        self._update_all_feeds()
 
-    def _fetch_all_feeds(self) -> list[FinancialNewsItem]:
+    def _update_all_feeds(self):
         """Fetch all RSS feeds"""
-        result = []
         for rss_feed_url in self.rss_feeds.values():
             try:
-                result.extend(self.rss_feed_service.query_feed(url=rss_feed_url))
+                self.data.update(self.rss_feed_service.query_feed(url=rss_feed_url))
             except Exception as e:
                 log.error(e)
-        return result
+
+        self.repository.save_all(self.data)
 
     def get_news(
         self,
@@ -163,10 +138,7 @@ class FinancialRSSDataService(ThreadedService):
         limit: Optional[int] = None,
         hours_back: Optional[int] = 24,
     ):
-        result: Collection[FinancialNewsItem] = []
-        for rss_feed_url in self.rss_feeds.values():
-            result.extend(self.rss_feed_service.get_all_previous_data_from_feed(rss_feed_url))
-        return result
+        return self.data
 
 
 if __name__ == "__main__":

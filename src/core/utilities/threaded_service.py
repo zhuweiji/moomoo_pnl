@@ -3,6 +3,8 @@ import threading
 import time
 from abc import ABC, abstractmethod
 
+from .singleton import ABCSingletonMeta, Singleton
+
 from .config.constants import INTERNAL_THREADED_SERVICE_RUN_SECONDS
 from .logger import get_logger
 
@@ -71,7 +73,7 @@ class ThreadedService(ABC):
         self.running = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self.monitor_thread.start()
-        print(f"{self.__class__.__name__} started")
+        log.info(f"{self.__class__.__name__} started")
 
     def stop(self) -> None:
         """Stop the monitoring thread."""
@@ -81,4 +83,8 @@ class ThreadedService(ABC):
         if self.monitor_thread:
             self.monitor_thread.join()
             self.monitor_thread = None
-        print(f"{self.__class__.__name__} stopped")
+        log.info(f"{self.__class__.__name__} stopped")
+
+
+class SingletonThreadedService(ThreadedService, metaclass=ABCSingletonMeta):
+    pass

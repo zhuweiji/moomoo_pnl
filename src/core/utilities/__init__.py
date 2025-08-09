@@ -8,3 +8,5 @@ from .logger import *
 from .opend import *
 from .singleton import *
 from .threaded_service import *
+from .types import *
+from .repositories import *
