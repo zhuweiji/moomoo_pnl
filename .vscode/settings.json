@@ -1,4 +1,5 @@
 {
     "python.analysis.typeCheckingMode": "basic",
-    // "python.analysis.extraPaths": ["./src"]
+    "python.analysis.extraPaths": ["./src"],
+    "python.analysis.includeAliasesFromUserFiles": true
 }

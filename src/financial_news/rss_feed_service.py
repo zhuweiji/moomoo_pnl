@@ -15,7 +15,7 @@ from src.core.utilities import (
     get_logger,
     url,
 )
-from src.financial_news.repositories import FinancialNewItemJsonFileRepository
+from src.financial_news.repositories import FinancialNewsItemJsonFileRepository
 
 from .models import FinancialNewsItem
 
@@ -72,7 +72,7 @@ class FinancialRSSDataService(SingletonThreadedService):
     """
 
     data: set[FinancialNewsItem] = set()
-    repository = FinancialNewItemJsonFileRepository(storage_path=FINANCIAL_NEWS_JSON_FILEPATH, item_class=FinancialNewsItem)
+    repository = FinancialNewsItemJsonFileRepository(storage_path=FINANCIAL_NEWS_JSON_FILEPATH, item_class=FinancialNewsItem)
 
     rss_feed_service = RSSFeedQueryService
 
@@ -91,6 +91,10 @@ class FinancialRSSDataService(SingletonThreadedService):
 
     def start(self):
         super().start()
+        self.load()
+
+    def load(self):
+        """Update the in-memory data with persisted data from the database"""
         self.data.update(self.repository.get_all())
 
     def add_source(self, name: str, url: url):

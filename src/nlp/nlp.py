@@ -69,15 +69,17 @@ if __name__ == "__main__":
     from src.financial_news.rss_feed_service import FinancialRSSDataService
 
     rss_service = FinancialRSSDataService()
-    rss_service.start()
+    rss_service.load()
     news = list(rss_service.get_news())
 
+    assert len(news) > 1
+
+    # time.sleep(20)
+
     top_10_news_items = [
-        textwrap.dedent(
-            f"""Title:{i.title.strip()}
-        Description:{i.description.strip()}"""
-        )
-        for i in news[:10]
+        textwrap.dedent(f"""Title:{i.title.strip()}
+        Description:{i.description.strip()}""")
+        for i in news[:50]
     ]
 
     extract_company_names_job = LanguageExtractionJobType(

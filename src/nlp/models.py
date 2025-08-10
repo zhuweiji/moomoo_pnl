@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from langextract.data import AlignmentStatus
+
 import langextract as lx
+from langextract.data import AlignmentStatus
+from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 from src.core.database import BaseModel, engine
 from src.core.utilities import get_logger
@@ -77,7 +78,7 @@ class CharIntervalModel(BaseModel):
 
     def to_langextract(self) -> lx.data.CharInterval:
         """Convert this model instance to a langextract CharInterval."""
-        return lx.data.CharInterval(start_pos=self.start_pos, end_pos=self.end_pos)
+        return lx.data.CharInterval(start_pos=self.start_pos, end_pos=self.end_pos)  # type: ignore
 
 
 class ExtractionModel(BaseModel):
@@ -125,11 +126,11 @@ class ExtractionModel(BaseModel):
             extraction_class=str(self.extraction_class),
             extraction_text=str(self.extraction_text),
             char_interval=char_interval,
-            alignment_status=self.alignment_status,
-            extraction_index=self.extraction_index,
-            group_index=self.group_index,
-            description=self.description,
-            attributes=self.attributes,
+            alignment_status=self.alignment_status,  # type: ignore
+            extraction_index=self.extraction_index,  # type: ignore
+            group_index=self.group_index,  # type: ignore
+            description=self.description,  # type: ignore
+            attributes=self.attributes,  # type: ignore
         )
 
 
