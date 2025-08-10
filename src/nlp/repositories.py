@@ -1,13 +1,15 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.core.database import BaseRepository
 from src.core.utilities import get_logger
+
 from .models import (
-    DocumentModel,
     AnnotatedDocumentModel,
-    ExtractionModel,
     CharIntervalModel,
+    DocumentModel,
+    ExtractionModel,
     LanguageExtractionExampleModel,
     LanguageExtractionJobTypeModel,
 )
@@ -69,7 +71,7 @@ class AnnotatedDocumentRepository(BaseRepository):
             log.error(f"Error persisting annotated document with relations: {str(e)}")
             raise
 
-    def create_base_object(self, document_id: str, text: Optional[str] = None) -> AnnotatedDocumentModel:
+    def create(self, document_id: str, text: Optional[str] = None) -> AnnotatedDocumentModel:
         try:
             annotated_doc = AnnotatedDocumentModel(document_id=document_id, text=text)
             self.session.add(annotated_doc)
