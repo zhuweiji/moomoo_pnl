@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from langextract.data import AlignmentStatus
 import langextract as lx
 
-from src.core.database import BaseModel
+from src.core.database import BaseModel, engine
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
@@ -216,3 +216,7 @@ class LanguageExtractionJobTypeModel(BaseModel):
             examples = [example.to_langextract() for example in self.examples]
 
         return LanguageExtractionJobType(prompt=str(self.prompt), name=str(self.name), examples=examples)
+
+
+# target for alembic replacement
+BaseModel.metadata.create_all(engine)

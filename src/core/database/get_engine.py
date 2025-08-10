@@ -11,6 +11,3 @@ engine = create_engine(SQLITE_DATABASE_URI)
 Base = declarative_base()
 
 SessionMaker = sessionmaker(bind=engine)
-
-# target for alembic replacement
-Base.metadata.create_all(engine)

@@ -1,11 +1,5 @@
-import asyncio
-import hashlib
-import time
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta
 from typing import Collection, Dict, List, Optional, Set, TypeAlias
 
-import aiohttp
 import feedparser
 import requests
 
@@ -17,11 +11,7 @@ from src.core.utilities import (
     RSS_FEED_REFRESH_INTERVAL_SECONDS,
     RSSFeedSources,
     SingletonThreadedService,
-    ThreadedService,
-    ThreadSafeTimedCache,
     datetime_from_iso8601,
-    datetime_iso8601_str,
-    datetime_to_iso8601_str,
     get_logger,
     url,
 )

@@ -35,7 +35,41 @@ class DocumentRepository(BaseRepository):
 
 
 class AnnotatedDocumentRepository(BaseRepository):
-    def create(self, document_id: str, text: Optional[str] = None) -> AnnotatedDocumentModel:
+    def create_with_relations(self, annotated_doc: AnnotatedDocumentModel) -> AnnotatedDocumentModel:
+        """
+        Persists an AnnotatedDocumentModel instance along with its related Extractions and CharIntervals.
+
+        Args:
+            annotated_doc: The AnnotatedDocumentModel instance to persist
+
+        Returns:
+            The persisted AnnotatedDocumentModel with all relations
+
+        Raises:
+            SQLAlchemyError: If there's an error during persistence
+        """
+        try:
+            # First persist the annotated document
+            self.session.add(annotated_doc)
+
+            # If there are extractions, persist them
+            if annotated_doc.extractions:
+                for extraction in annotated_doc.extractions:
+                    self.session.add(extraction)
+
+                    # If the extraction has char_intervals, persist them
+                    if extraction.char_interval:
+                        self.session.add(extraction.char_interval)
+
+            self.session.commit()
+            return annotated_doc
+
+        except SQLAlchemyError as e:
+            self.session.rollback()
+            log.error(f"Error persisting annotated document with relations: {str(e)}")
+            raise
+
+    def create_base_object(self, document_id: str, text: Optional[str] = None) -> AnnotatedDocumentModel:
         try:
             annotated_doc = AnnotatedDocumentModel(document_id=document_id, text=text)
             self.session.add(annotated_doc)
