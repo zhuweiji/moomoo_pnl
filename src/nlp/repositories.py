@@ -3,15 +3,22 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from src.core.database import BaseRepository
 from src.core.utilities import get_logger
-from .models import Document, AnnotatedDocument, Extraction, CharInterval
+from .models import (
+    DocumentModel,
+    AnnotatedDocumentModel,
+    ExtractionModel,
+    CharIntervalModel,
+    LanguageExtractionExampleModel,
+    LanguageExtractionJobTypeModel,
+)
 
 log = get_logger(__name__)
 
 
 class DocumentRepository(BaseRepository):
-    def create(self, document_id: str, text: str, additional_context: Optional[str] = None) -> Document:
+    def create(self, document_id: str, text: str, additional_context: Optional[str] = None) -> DocumentModel:
         try:
-            document = Document(document_id=document_id, text=text, additional_context=additional_context)
+            document = DocumentModel(document_id=document_id, text=text, additional_context=additional_context)
             self.session.add(document)
             self.session.commit()
             return document
@@ -20,17 +27,17 @@ class DocumentRepository(BaseRepository):
             log.error(f"Error creating document: {str(e)}")
             raise
 
-    def get_by_id(self, document_id: str) -> Optional[Document]:
-        return self.session.query(Document).filter(Document.document_id == document_id).first()
+    def get_by_id(self, document_id: str) -> Optional[DocumentModel]:
+        return self.session.query(DocumentModel).filter(DocumentModel.document_id == document_id).first()
 
-    def get_all(self) -> List[Document]:
-        return self.session.query(Document).all()
+    def get_all(self) -> List[DocumentModel]:
+        return self.session.query(DocumentModel).all()
 
 
 class AnnotatedDocumentRepository(BaseRepository):
-    def create(self, document_id: str, text: Optional[str] = None) -> AnnotatedDocument:
+    def create(self, document_id: str, text: Optional[str] = None) -> AnnotatedDocumentModel:
         try:
-            annotated_doc = AnnotatedDocument(document_id=document_id, text=text)
+            annotated_doc = AnnotatedDocumentModel(document_id=document_id, text=text)
             self.session.add(annotated_doc)
             self.session.commit()
             return annotated_doc
@@ -39,11 +46,11 @@ class AnnotatedDocumentRepository(BaseRepository):
             log.error(f"Error creating annotated document: {str(e)}")
             raise
 
-    def get_by_document_id(self, document_id: str) -> Optional[AnnotatedDocument]:
-        return self.session.query(AnnotatedDocument).filter(AnnotatedDocument.document_id == document_id).first()
+    def get_by_document_id(self, document_id: str) -> Optional[AnnotatedDocumentModel]:
+        return self.session.query(AnnotatedDocumentModel).filter(AnnotatedDocumentModel.document_id == document_id).first()
 
-    def get_all(self) -> List[AnnotatedDocument]:
-        return self.session.query(AnnotatedDocument).all()
+    def get_all(self) -> List[AnnotatedDocumentModel]:
+        return self.session.query(AnnotatedDocumentModel).all()
 
 
 class ExtractionRepository(BaseRepository):
@@ -57,9 +64,9 @@ class ExtractionRepository(BaseRepository):
         group_index: Optional[int] = None,
         description: Optional[str] = None,
         attributes: Optional[dict] = None,
-    ) -> Extraction:
+    ) -> ExtractionModel:
         try:
-            extraction = Extraction(
+            extraction = ExtractionModel(
                 extraction_class=extraction_class,
                 extraction_text=extraction_text,
                 annotated_document_id=annotated_document_id,
@@ -77,14 +84,14 @@ class ExtractionRepository(BaseRepository):
             log.error(f"Error creating extraction: {str(e)}")
             raise
 
-    def get_by_annotated_document_id(self, annotated_document_id: int) -> List[Extraction]:
-        return self.session.query(Extraction).filter(Extraction.annotated_document_id == annotated_document_id).all()
+    def get_by_annotated_document_id(self, annotated_document_id: int) -> List[ExtractionModel]:
+        return self.session.query(ExtractionModel).filter(ExtractionModel.annotated_document_id == annotated_document_id).all()
 
 
 class CharIntervalRepository(BaseRepository):
-    def create(self, extraction_id: int, start_pos: Optional[int] = None, end_pos: Optional[int] = None) -> CharInterval:
+    def create(self, extraction_id: int, start_pos: Optional[int] = None, end_pos: Optional[int] = None) -> CharIntervalModel:
         try:
-            char_interval = CharInterval(extraction_id=extraction_id, start_pos=start_pos, end_pos=end_pos)
+            char_interval = CharIntervalModel(extraction_id=extraction_id, start_pos=start_pos, end_pos=end_pos)
             self.session.add(char_interval)
             self.session.commit()
             return char_interval
@@ -93,5 +100,46 @@ class CharIntervalRepository(BaseRepository):
             log.error(f"Error creating char interval: {str(e)}")
             raise
 
-    def get_by_extraction_id(self, extraction_id: int) -> Optional[CharInterval]:
-        return self.session.query(CharInterval).filter(CharInterval.extraction_id == extraction_id).first()
+    def get_by_extraction_id(self, extraction_id: int) -> Optional[CharIntervalModel]:
+        return self.session.query(CharIntervalModel).filter(CharIntervalModel.extraction_id == extraction_id).first()
+
+
+class LanguageExtractionExampleRepository(BaseRepository):
+    def create(self, text: str, job_type_id: int, extractions: Optional[List[ExtractionModel]] = None) -> LanguageExtractionExampleModel:
+        try:
+            example = LanguageExtractionExampleModel(text=text, job_type_id=job_type_id)
+            if extractions:
+                example.extractions = extractions
+
+            self.session.add(example)
+            self.session.commit()
+            return example
+        except SQLAlchemyError as e:
+            self.session.rollback()
+            log.error(f"Error creating language extraction example: {str(e)}")
+            raise
+
+    def get_by_job_type_id(self, job_type_id: int) -> List[LanguageExtractionExampleModel]:
+        return self.session.query(LanguageExtractionExampleModel).filter(LanguageExtractionExampleModel.job_type_id == job_type_id).all()
+
+
+class LanguageExtractionJobTypeRepository(BaseRepository):
+    def create(self, name: str, prompt: str, examples: Optional[List[LanguageExtractionExampleModel]] = None) -> LanguageExtractionJobTypeModel:
+        try:
+            job_type = LanguageExtractionJobTypeModel(name=name, prompt=prompt)
+            if examples:
+                job_type.examples = examples
+
+            self.session.add(job_type)
+            self.session.commit()
+            return job_type
+        except SQLAlchemyError as e:
+            self.session.rollback()
+            log.error(f"Error creating language extraction job type: {str(e)}")
+            raise
+
+    def get_by_name(self, name: str) -> Optional[LanguageExtractionJobTypeModel]:
+        return self.session.query(LanguageExtractionJobTypeModel).filter(LanguageExtractionJobTypeModel.name == name).first()
+
+    def get_all(self) -> List[LanguageExtractionJobTypeModel]:
+        return self.session.query(LanguageExtractionJobTypeModel).all()

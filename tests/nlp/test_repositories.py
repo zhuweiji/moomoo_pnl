@@ -10,8 +10,10 @@ from src.nlp.repositories import (
     AnnotatedDocumentRepository,
     ExtractionRepository,
     CharIntervalRepository,
+    LanguageExtractionExampleRepository,
+    LanguageExtractionJobTypeRepository,
 )
-from src.nlp.models import Document, AnnotatedDocument, Extraction, CharInterval
+from src.nlp.models import DocumentModel, AnnotatedDocumentModel, ExtractionModel, CharIntervalModel
 
 from src.core.utilities import get_logger
 
@@ -54,6 +56,16 @@ def extraction_repo(session):
 @pytest.fixture
 def char_interval_repo(session):
     return CharIntervalRepository(session)
+
+
+@pytest.fixture
+def job_type_repo(session):
+    return LanguageExtractionJobTypeRepository(session)
+
+
+@pytest.fixture
+def example_repo(session):
+    return LanguageExtractionExampleRepository(session)
 
 
 class TestDocumentRepository:
@@ -154,3 +166,58 @@ class TestCharIntervalRepository:
         retrieved = char_interval_repo.get_by_extraction_id(extraction.id)
         assert retrieved.start_pos == char_interval.start_pos
         assert retrieved.end_pos == char_interval.end_pos
+
+
+class TestLanguageExtractionJobTypeRepository:
+    def test_create_job_type(self, job_type_repo):
+        job_type = job_type_repo.create(name="test_job", prompt="Test prompt")
+
+        assert job_type.name == "test_job"
+        assert job_type.prompt == "Test prompt"
+
+    def test_get_by_name(self, job_type_repo):
+        created = job_type_repo.create(name="test_job", prompt="Test prompt")
+
+        retrieved = job_type_repo.get_by_name("test_job")
+        assert retrieved.id == created.id
+        assert retrieved.name == created.name
+        assert retrieved.prompt == created.prompt
+
+    def test_get_all(self, job_type_repo):
+        job_type_repo.create(name="job1", prompt="prompt1")
+        job_type_repo.create(name="job2", prompt="prompt2")
+
+        jobs = job_type_repo.get_all()
+        assert len(jobs) == 2
+        assert {job.name for job in jobs} == {"job1", "job2"}
+
+
+class TestLanguageExtractionExampleRepository:
+    def test_create_example(self, example_repo, job_type_repo):
+        # Create parent job type first
+        job_type = job_type_repo.create(name="test_job", prompt="Test prompt")
+
+        example = example_repo.create(text="example text", job_type_id=job_type.id)
+
+        assert example.text == "example text"
+        assert example.job_type_id == job_type.id
+
+    def test_get_by_job_type_id(self, example_repo, job_type_repo):
+        job_type = job_type_repo.create(name="test_job", prompt="Test prompt")
+
+        example_repo.create(text="example1", job_type_id=job_type.id)
+        example_repo.create(text="example2", job_type_id=job_type.id)
+
+        examples = example_repo.get_by_job_type_id(job_type.id)
+        assert len(examples) == 2
+        assert {ex.text for ex in examples} == {"example1", "example2"}
+
+    def test_create_with_extractions(self, example_repo, job_type_repo, extraction_repo):
+        job_type = job_type_repo.create(name="test_job", prompt="Test prompt")
+
+        extraction = ExtractionModel(extraction_class="test_class", extraction_text="test extraction")
+
+        example = example_repo.create(text="example text", job_type_id=job_type.id, extractions=[extraction])
+
+        assert len(example.extractions) == 1
+        assert example.extractions[0].extraction_class == "test_class"

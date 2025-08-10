@@ -4,40 +4,13 @@ import textwrap
 import langextract as lx
 
 from src.core.utilities import LANGEXTRACT_MODEL, get_logger, DATA_DIR, get_current_datetime, datetime_iso8601_str, STRUCTURED_TEXT_DATA_DIR
+from .models import LanguageExtractionJobType
 
 log = get_logger(__name__)
 
-# prompt + examples together for a task
-
-
-@dataclass(frozen=True)
-class LanguageExtractionTask:
-    """Example
-        ```
-        prompt = "Extract characters, emotions, and relationships in order of appearance."
-        "Use exact text for extractions. Do not paraphrase or overlap entities."
-        "Provide meaningful attributes for each entity to add context"
-
-        examples = [
-        ExampleData(
-            text="ROMEO. But soft! What light through yonder window breaks? It is the east, and Juliet is the sun.",
-            extractions=[
-                Extraction(extraction_class="character", extraction_text="ROMEO", attributes={"emotional_state": "wonder"}),
-                Extraction(extraction_class="emotion", extraction_text="But soft!", attributes={"feeling": "gentle awe"}),
-                Extraction(extraction_class="relationship", extraction_text="Juliet is the sun", attributes={"type": "metaphor"}),
-            ],
-        )
-    ]
-    ```
-    """
-
-    prompt: str
-    examples: list[lx.data.ExampleData]
-    name: str = "UnnamedTask"
-
 
 # tbd name on what exactly we will be extracting
-def extract_sometext_for_task(self, input_text: str, task: LanguageExtractionTask):
+def extract_sometext(input_text: str, task: LanguageExtractionJobType):
     prompt = textwrap.dedent(task.prompt)
 
     result: lx.data.AnnotatedDocument = lx.extract(
