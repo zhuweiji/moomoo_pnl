@@ -10,6 +10,8 @@ from typing import Optional, Union
 from uuid import UUID, uuid4
 
 from src.core.utilities import get_logger
+from src.core.database import BaseModel, SessionMaker, engine
+
 
 log = get_logger(__name__)
 
@@ -107,13 +109,11 @@ class BaseCustomOrder(ABC):
     error_message: Optional[str] = None
     comments: Optional[str] = None
 
-    @classmethod
-    def _validate_common_params(
-        cls,
-        quantity: int,
-    ) -> None:
-        """Validate common parameters for all order types."""
-        if quantity <= 0:
+    def validate(self) -> None:
+        """Validate common parameters for all order types.
+
+        Subclasses implementing their own should run super.validate() from their parents"""
+        if self.quantity <= 0:
             raise ValueError("Quantity must be positive")
 
     @abstractmethod
@@ -129,7 +129,7 @@ class BaseCustomOrder(ABC):
 
 # TODO incorporate this new order - add service and register with the manager
 @dataclass(kw_only=True)
-class RangeBucketOrder(BaseCustomOrder):
+class RangeBucketBuyOrder(BaseCustomOrder):
     """
     A custom order that buys across a range of prices divided into buckets.
     Either specify num_buckets or bucket_size, but not both.
@@ -145,7 +145,9 @@ class RangeBucketOrder(BaseCustomOrder):
 
     # should add utility properties like total price of order
 
-    def __post_init__(self):
+    def validate(self):
+        super().validate()
+
         if self.start_price >= self.end_price:
             raise ValueError("start_price must be less than end_price")
 
@@ -155,7 +157,9 @@ class RangeBucketOrder(BaseCustomOrder):
         if not self.num_buckets and not self.bucket_size:
             raise ValueError("Must specify either num_buckets or bucket_size")
 
+    def __post_init__(self):
         # Create buckets
+        self.validate()
         self.buckets = self._generate_buckets()
         # Validate total quantity distribution (could extend here)
 
@@ -173,7 +177,7 @@ class RangeBucketOrder(BaseCustomOrder):
         Check if current price matches an untriggered bucket.
         """
         # Use some tolerance because of float precision issues
-        tolerance = 1e-4
+        tolerance = 1e-2
         for price in self.buckets:
             if price not in self.triggered_buckets:
                 if abs(current_price - price) <= tolerance:

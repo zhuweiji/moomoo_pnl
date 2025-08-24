@@ -14,6 +14,7 @@ from src.core.orders.models import (
     CustomOrderStatus,
     CustomTrailingStopBuyOrder,
     CustomTrailingStopSellOrder,
+    RangeBucketBuyOrder,
 )
 from src.core.utilities import get_logger
 
@@ -82,7 +83,7 @@ class TrailingStopSellOrderService(OrderService):
         return matching_positions[0].nominal_price
 
     def execute_order(self, order: CustomTrailingStopSellOrder) -> None:
-        simulated_trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
+        trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
 
         try:
             order.status = CustomOrderStatus.TRIGGERED
@@ -102,7 +103,7 @@ class TrailingStopSellOrderService(OrderService):
                     trd_side=TrdSide.SELL,
                     order_type=OrderType.MARKET,
                     adjust_limit=0,
-                    trd_env=simulated_trading_env,
+                    trd_env=trading_env,
                     time_in_force=TimeInForce.DAY,
                     remark=f"Trailing stop sell order {order.id}",
                 )
@@ -150,7 +151,7 @@ class TrailingStopBuyOrderService(OrderService):
         return get_stock_price(order.stock_code)
 
     def execute_order(self, order: CustomTrailingStopBuyOrder) -> None:
-        simulated_trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
+        trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
 
         try:
             order.status = CustomOrderStatus.TRIGGERED
@@ -170,7 +171,7 @@ class TrailingStopBuyOrderService(OrderService):
                     trd_side=TrdSide.BUY,
                     order_type=OrderType.MARKET,
                     adjust_limit=0,
-                    trd_env=simulated_trading_env,
+                    trd_env=trading_env,
                     time_in_force=TimeInForce.DAY,
                     remark=f"Trailing stop buy order {order.id}",
                 )
@@ -186,6 +187,82 @@ class TrailingStopBuyOrderService(OrderService):
             raise
 
     def set_error_status(self, order: CustomTrailingStopBuyOrder, error_msg: str) -> None:
+        order.status = CustomOrderStatus.ERROR
+        order.error_message = error_msg
+        order.updated_at = datetime.now()
+
+
+class RangeBucketBuyOrderService(OrderService):
+    """Service for handling range bucket orders."""
+
+    def validate_new_order(self, order: RangeBucketBuyOrder, positions) -> None:
+        # No validation needed for bucket orders as we don't need existing position
+        pass
+
+    def can_cancel_order(self, order: RangeBucketBuyOrder) -> bool:
+        return order.status == CustomOrderStatus.WAITING and len(order.remaining_buckets()) > 0
+
+    def is_order_waiting(self, order: RangeBucketBuyOrder) -> bool:
+        return order.status == CustomOrderStatus.WAITING and len(order.remaining_buckets()) > 0
+
+    def get_current_price(self, order: RangeBucketBuyOrder, positions):
+        """Get current price for the stock using yfinance.
+
+        For stocks in current positions, use position data.
+        For custom stocks, fetch from yfinance.
+        """
+        # First try to get from positions
+        matching_positions = [i for i in positions if i.code == order.stock_code]
+        if matching_positions:
+            return matching_positions[0].nominal_price
+
+        return get_stock_price(order.stock_code)
+
+    def execute_order(self, order: RangeBucketBuyOrder) -> None:
+        """Execute a single bucket of the range bucket order."""
+        simulated_trading_env = TrdEnv.SIMULATE if self.is_simulated_env else TrdEnv.REAL
+        current_bucket = order.get_trigger_price()
+
+        if not current_bucket:
+            raise ValueError("No remaining buckets to execute")
+
+        try:
+            with MoomooClient.get_trade_context() as trd_ctx:
+                ret, data = trd_ctx.unlock_trade(os.getenv("MOOMOO_TRADING_PASSWORD"))
+                if ret == RET_OK:
+                    log.info("unlock success!")
+                else:
+                    log.info("unlock_trade failed: ", data)
+
+                # Calculate quantity for this bucket
+                bucket_quantity = order.quantity // len(order.buckets)
+                if bucket_quantity < 1:
+                    bucket_quantity = 1
+
+                ret, data = trd_ctx.place_order(
+                    price=0.0,  # Market order
+                    qty=bucket_quantity,
+                    code=order.stock_code,
+                    trd_side=TrdSide.BUY,
+                    order_type=OrderType.MARKET,
+                    adjust_limit=0,
+                    trd_env=simulated_trading_env,
+                    time_in_force=TimeInForce.DAY,
+                    remark=f"Range bucket order {order.id} at price {current_bucket}",
+                )
+
+                if ret != RET_OK:
+                    raise Exception(f"Failed to place order: {data}")
+
+            # Mark this bucket as triggered
+            order.mark_bucket_triggered(current_bucket)
+            log.info(f"Successfully executed bucket at price {current_bucket} for order {order.id}")
+
+        except Exception as e:
+            self.set_error_status(order, str(e))
+            raise
+
+    def set_error_status(self, order: RangeBucketBuyOrder, error_msg: str) -> None:
         order.status = CustomOrderStatus.ERROR
         order.error_message = error_msg
         order.updated_at = datetime.now()
