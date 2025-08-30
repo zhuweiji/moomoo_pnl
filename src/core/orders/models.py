@@ -9,9 +9,8 @@ from enum import Enum
 from typing import Optional, Union
 from uuid import UUID, uuid4
 
-from src.core.utilities import get_logger
 from src.core.database import BaseModel, SessionMaker, engine
-
+from src.core.utilities import get_logger
 
 log = get_logger(__name__)
 
@@ -71,10 +70,10 @@ class CurrentPosition:
     realized_pl: Union[str, float]  # Same as unrealized_pl
     currency: str
 
-    position_market: str
-    average_cost: float
-    diluted_cost: float
-    pl_ratio_avg_cost: float
+    position_market: str | None = None
+    average_cost: float | None = None
+    diluted_cost: float | None = None
+    pl_ratio_avg_cost: float | None = None
 
 
 class CustomOrderStatus(Enum):
