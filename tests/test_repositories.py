@@ -1,15 +1,16 @@
-import pytest
-
-
 import json
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock, patch, mock_open
-from typing import Collection, Dict, Any
+from typing import Any, Collection, Dict
+from unittest.mock import Mock, mock_open, patch
 
+import pytest
 
-from src.core.utilities.repositories import Repository, JsonFileRepository, JsonSerializable
+from src.core.utilities.repositories import (
+    JsonFileRepository,
+    JsonSerializable,
+    Repository,
+)
 
 
 def test_abstract_repository_cannot_be_created():

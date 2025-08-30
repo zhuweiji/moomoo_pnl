@@ -6,13 +6,18 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Generic, List, Optional, Type, TypeVar
+from typing import Collection, Dict, Generic, List, Optional, Type, TypeVar
 
+from sqlalchemy.orm import Session
+
+from src.core.database.repository import BaseRepository
 from src.core.orders.models import (
+    BaseCustomOrder,
     CustomOrderStatus,
     CustomTrailingStopBuyOrder,
     CustomTrailingStopSellOrder,
 )
+from src.core.orders.models2 import BaseCustomOrderModel, RangeBucketBuyOrderModel
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)

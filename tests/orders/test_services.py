@@ -1,11 +1,12 @@
 import logging
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from src.core.orders.models import RangeBucketBuyOrder, CustomOrderStatus
-from src.core.orders.services import RangeBucketBuyOrderService
+import pytest
+
 from src.core.external_data_services.stock_data.yfinance import get_stock_price
+from src.core.orders.models import CustomOrderStatus, RangeBucketBuyOrder
+from src.core.orders.services import RangeBucketBuyOrderService
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
