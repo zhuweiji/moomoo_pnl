@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Callable, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel
+import pydantic
 
 from src.core.notifications.notification_service import send_notification
 from src.core.utilities import get_logger
@@ -12,7 +12,7 @@ from src.core.utilities import get_logger
 log = get_logger(__name__)
 
 
-class TaskConfig(BaseModel):
+class TaskConfig(pydantic.BaseModel):
     """Configuration for a registered task"""
 
     func: Callable[[], Any]  # The function to run

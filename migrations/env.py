@@ -6,6 +6,11 @@ from sqlalchemy import engine_from_config, pool
 from src.core.database.get_engine import engine
 from src.core.database.model import BaseModel
 
+import src.main
+import src.financial_news.models
+import src.financial_news.nlp.models
+
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

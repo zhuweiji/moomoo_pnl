@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
-from src.core.orders.managers import OrderManager
+
 from src.core.orders.models import (
     CustomOrderStatus,
     CustomTrailingStopBuyOrder,
@@ -15,8 +15,6 @@ from src.core.orders.models import (
 )
 
 router = APIRouter()
-order_manager = OrderManager()
-order_manager.start()
 
 
 class TrailingStopSellOrderCreate(BaseModel):

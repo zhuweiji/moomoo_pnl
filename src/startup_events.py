@@ -1,0 +1,43 @@
+from src.core.orders.managers import OrderManager
+from src.alerts.task_service import TaskService
+from src.core.external_data_services.currency_rates import (
+    get_usd_to_bitcoin_rate,
+    get_usd_to_sgd_rate,
+)
+from contextlib import asynccontextmanager
+from src.core.utilities import get_logger
+from fastapi import Depends, FastAPI, Request
+
+from src.core.external_data_services.stock_data.yfinance import get_stock_price
+
+log = get_logger(__name__)
+
+order_manager = OrderManager()
+global_task_service = TaskService()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # start monitoring orders
+    order_manager.start()
+
+    # start monitoring tasks
+    # Global task service instance
+
+    # registering the USD to bitcoin rate task
+    # global_task_service.register_task(
+    #     func=lambda: get_stock_price("US.ASTS"),
+    #     interval_seconds=60 * 60,  # one hour
+    #     condition=lambda result: result < 46,
+    #     name="ASTS less than $46",
+    #     alert_message="ASTS price:",
+    # )
+
+    log.info("Starting background tasks")
+    for task_id, task_config in global_task_service.tasks.items():
+        log.info(f"Starting task: {task_config.name}")
+        global_task_service.start_task(task_id)
+
+    yield
+
+    order_manager.stop()

@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from src.alerts import global_task_service
+from src.startup_events import global_task_service
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)

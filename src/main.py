@@ -17,13 +17,16 @@ from src.routes.positions import router as positions_router
 from src.routes.stock_data import router as stock_data_router
 from src.routes.utils import get_current_username
 
+from .startup_events import lifespan
+
+
 log = get_logger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 security = HTTPBasic()
 
 # Mount static files
