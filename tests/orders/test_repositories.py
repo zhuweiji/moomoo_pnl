@@ -4,7 +4,6 @@ import pytest
 
 from src.core.orders.models import CustomOrderStatus
 from src.core.orders.repositories2 import BaseCustomOrderRepository
-from tests.conftest import test_db_session
 from tests.orders.shared import TestOrderModel
 
 

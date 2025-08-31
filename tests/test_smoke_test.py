@@ -3,14 +3,9 @@
 Smoke test for the service - runs the service for 5 seconds and checks for failures.
 """
 
-import os
-import signal
 import subprocess
 import sys
 import time
-from pathlib import Path
-
-import pytest
 
 from src.core.utilities import get_logger
 
