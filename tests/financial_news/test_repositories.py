@@ -2,14 +2,17 @@ from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from src.core.database import BaseModel
 from src.core.utilities import DEFAULT_TZ
-from src.financial_news.models import FinancialNewsItem, FinancialNewsItemModel, NewsSourceModel
-from src.financial_news.repositories import FinancialNewsItemJsonFileRepository, FinancialNewsItemModelRepository, NewsSourceRepository
+from src.financial_news.models import (
+    FinancialNewsItem,
+    FinancialNewsItemModel,
+    NewsSourceModel,
+)
+from src.financial_news.repositories import (
+    FinancialNewsItemJsonFileRepository,
+    FinancialNewsItemModelRepository,
+    NewsSourceRepository,
+)
 
 
 class TestFinancialNewItemJsonFileRepository:
@@ -79,67 +82,57 @@ class TestFinancialNewItemJsonFileRepository:
             assert loaded_item.published == news_items[i].published
 
 
-@pytest.fixture
-def source_repo(db_session):
-    return NewsSourceRepository(db_session)
-
-
-@pytest.fixture
-def news_repo(db_session):
-    return FinancialNewsItemModelRepository(db_session)
-
-
 class TestNewsSourceRepository:
-    def test_create_source(self, source_repo):
-        source = source_repo.create(name="Reuters")
-
+    def test_create_source(self, db_session):
+        source = NewsSourceRepository.create(name="Reuters", session=db_session)
+        assert source
         assert source.name == "Reuters"
         assert source.id is not None
 
-    def test_get_by_name(self, source_repo):
-        created_source = source_repo.create(name="Reuters")
+    def test_get_by_name(self, db_session):
+        created_source = NewsSourceRepository.create(name="Reuters", session=db_session)
 
-        retrieved_source = source_repo.get_by_name("Reuters")
+        retrieved_source = NewsSourceRepository.get_by_name("Reuters", session=db_session)
         assert retrieved_source is not None
         assert retrieved_source.name == created_source.name
         assert retrieved_source.id == created_source.id
 
-    def test_get_by_name_not_found(self, source_repo):
-        retrieved_source = source_repo.get_by_name("NonExistent")
+    def test_get_by_name_not_found(self, db_session):
+        retrieved_source = NewsSourceRepository.get_by_name("NonExistent", session=db_session)
         assert retrieved_source is None
 
-    def test_get_or_create_existing(self, source_repo):
-        source1 = source_repo.create(name="Reuters")
-        source2 = source_repo.get_or_create(name="Reuters")
+    def test_get_or_create_existing(self, db_session):
+        source1 = NewsSourceRepository.create(name="Reuters", session=db_session)
+        source2 = NewsSourceRepository.get_or_create(name="Reuters", session=db_session)
 
         assert source1.id == source2.id
         assert source1.name == source2.name
 
-    def test_get_or_create_new(self, source_repo):
-        source = source_repo.get_or_create(name="Reuters")
+    def test_get_or_create_new(self, db_session):
+        source = NewsSourceRepository.get_or_create(name="Reuters", session=db_session)
 
         assert source.name == "Reuters"
         assert source.id is not None
 
 
 class TestFinancialNewsItemModelRepository:
-    def test_create_from_model(self, news_repo, source_repo):
-        source = source_repo.create(name="Reuters")
+    def test_create_from_model(self, db_session):
+        source = NewsSourceRepository.create(name="Reuters", session=db_session)
 
         news_item = FinancialNewsItemModel(
             title="Test News", description="Test Description", link="https://example.com", source=source, published=datetime.now(tz=DEFAULT_TZ)
         )
 
-        created_item = news_repo.create_from_model(news_item)
+        created_item = FinancialNewsItemModelRepository.create_from_model(news_item, session=db_session)
 
         assert created_item.title == "Test News"
         assert created_item.source.name == "Reuters"
         assert created_item.id is not None
 
-    def test_get_by_source(self, news_repo, source_repo):
+    def test_get_by_source(self, db_session):
         # Create two sources
-        reuters = source_repo.create(name="Reuters")
-        bloomberg = source_repo.create(name="Bloomberg")
+        reuters = NewsSourceRepository.create(name="Reuters", session=db_session)
+        bloomberg = NewsSourceRepository.create(name="Bloomberg", session=db_session)
 
         # Create news items for each source
         reuters_news = FinancialNewsItemModel(
@@ -153,16 +146,16 @@ class TestFinancialNewsItemModelRepository:
             published=datetime.now(tz=DEFAULT_TZ),
         )
 
-        news_repo.create_from_model(reuters_news)
-        news_repo.create_from_model(bloomberg_news)
+        FinancialNewsItemModelRepository.create_from_model(reuters_news, session=db_session)
+        FinancialNewsItemModelRepository.create_from_model(bloomberg_news, session=db_session)
 
         # Test retrieving by source
-        reuters_items = news_repo.get_by_source("Reuters")
+        reuters_items = FinancialNewsItemModelRepository.get_by_source("Reuters", session=db_session)
         assert len(reuters_items) == 1
         assert reuters_items[0].title == "Reuters News"
         assert reuters_items[0].source.name == "Reuters"
 
-        bloomberg_items = news_repo.get_by_source("Bloomberg")
+        bloomberg_items = FinancialNewsItemModelRepository.get_by_source("Bloomberg", session=db_session)
         assert len(bloomberg_items) == 1
         assert bloomberg_items[0].title == "Bloomberg News"
         assert bloomberg_items[0].source.name == "Bloomberg"

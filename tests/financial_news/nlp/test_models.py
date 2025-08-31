@@ -1,16 +1,16 @@
 import pytest
-from langextract.data import Document as LxDocument
-from langextract.data import AnnotatedDocument as LxAnnotatedDocument
-from langextract.data import Extraction as LxExtraction
-from langextract.data import CharInterval as LxCharInterval
 from langextract.data import AlignmentStatus
+from langextract.data import AnnotatedDocument as LxAnnotatedDocument
+from langextract.data import CharInterval as LxCharInterval
+from langextract.data import Document as LxDocument
 from langextract.data import ExampleData as LxExampleData
+from langextract.data import Extraction as LxExtraction
 
 from src.financial_news.nlp.models import (
-    DocumentModel,
     AnnotatedDocumentModel,
-    ExtractionModel,
     CharIntervalModel,
+    DocumentModel,
+    ExtractionModel,
     LanguageExtractionExampleModel,
     LanguageExtractionJobType,
     LanguageExtractionJobTypeModel,
@@ -55,8 +55,6 @@ def lx_example_data(lx_extraction):
 
 @pytest.fixture
 def job_type_dataclass(lx_example_data):
-    from src.nlp.models import LanguageExtractionJobType
-
     return LanguageExtractionJobType(name="test_job", prompt="test prompt", examples=[lx_example_data])
 
 

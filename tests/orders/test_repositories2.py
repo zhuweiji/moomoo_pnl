@@ -4,6 +4,7 @@ import pytest
 
 from src.core.orders.models import CustomOrderStatus
 from src.core.orders.repositories2 import BaseCustomOrderRepository
+from tests.conftest import test_db_session
 from tests.orders.shared import TestOrderModel
 
 
@@ -35,7 +36,7 @@ def test_order():
 def test_create_order(db_session, order_repository, test_order):
     """Test creating an order."""
     # Create order
-    order_repository.save([test_order])
+    order_repository.save([test_order], db_session)
 
     # Verify order was created
     saved_order = db_session.query(TestOrderModel).filter_by(id=test_order.id).first()
@@ -54,7 +55,7 @@ def test_get_by_id(db_session, order_repository, test_order):
     db_session.commit()
 
     # Retrieve order
-    order = order_repository.get_by_id(test_order.id)
+    order = order_repository.get_by_id(test_order.id, db_session)
     assert order is not None
     assert order.id == test_order.id
     assert order.stock_code == "AAPL"
@@ -69,7 +70,7 @@ def test_get_all(db_session, order_repository, test_order):
     db_session.commit()
 
     # Retrieve all orders
-    orders = order_repository.get_all()
+    orders = order_repository.get_all(db_session)
     assert len(orders) == 2
     assert {o.id for o in orders} == {"test-order-1", "test-order-2"}
 
@@ -84,7 +85,7 @@ def test_update(db_session, order_repository, test_order):
     test_order.quantity = 20
     test_order.status = CustomOrderStatus.COMPLETED
     test_order.last_checked_price = 155.75
-    order_repository.update(test_order)
+    order_repository.update(test_order, db_session)
 
     # Verify updates
     updated_order = db_session.query(TestOrderModel).filter_by(id=test_order.id).first()
@@ -100,7 +101,7 @@ def test_delete(db_session, order_repository, test_order):
     db_session.commit()
 
     # Delete order
-    order_repository.delete(test_order.id)
+    order_repository.delete(test_order.id, db_session)
 
     # Verify deletion
     deleted_order = db_session.query(TestOrderModel).filter_by(id=test_order.id).first()
@@ -116,8 +117,8 @@ def test_get_by_status(db_session, order_repository, test_order):
     db_session.commit()
 
     # Get orders by status
-    waiting_orders = order_repository.get_by_status(CustomOrderStatus.WAITING)
-    executed_orders = order_repository.get_by_status(CustomOrderStatus.COMPLETED)
+    waiting_orders = order_repository.get_by_status(CustomOrderStatus.WAITING, db_session)
+    executed_orders = order_repository.get_by_status(CustomOrderStatus.COMPLETED, db_session)
 
     assert len(waiting_orders) == 1
     assert waiting_orders[0].id == "test-order-1"

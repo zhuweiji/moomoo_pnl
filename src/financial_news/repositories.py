@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from src.core.database.repository import BaseRepository
 from src.core.utilities import JsonFileRepository
@@ -16,49 +17,54 @@ class FinancialNewsItemJsonFileRepository(JsonFileRepository[FinancialNewsItem])
 
 
 class NewsSourceRepository(BaseRepository):
-    def get_by_name(self, name: str) -> NewsSourceModel | None:
+    @classmethod
+    def get_by_name(cls, name: str, session: Session) -> NewsSourceModel | None:
         try:
             stmt = select(NewsSourceModel).where(NewsSourceModel.name == name)
-            result = self.session.execute(stmt).scalar_one_or_none()
+            result = session.execute(stmt).scalar_one_or_none()
             return result
         except SQLAlchemyError as e:
-            self.session.rollback()
+            session.rollback()
             log.error(f"Error getting news source: {str(e)}")
             raise
 
-    def create(self, name: str) -> NewsSourceModel:
+    @classmethod
+    def create(cls, name: str, session: Session) -> NewsSourceModel:
         try:
             source = NewsSourceModel(name=name)
-            self.session.add(source)
-            self.session.commit()
+            session.add(source)
+            session.commit()
             return source
         except SQLAlchemyError as e:
-            self.session.rollback()
+            session.rollback()
             log.error(f"Error creating news source: {str(e)}")
             raise
 
-    def get_or_create(self, name: str) -> NewsSourceModel:
-        source = self.get_by_name(name)
+    @classmethod
+    def get_or_create(cls, name: str, session: Session) -> NewsSourceModel:
+        source = cls.get_by_name(name, session=session)
         if not source:
-            source = self.create(name)
+            source = cls.create(name, session=session)
         return source
 
 
 class FinancialNewsItemModelRepository(BaseRepository):
-    def create_from_model(self, object: FinancialNewsItemModel):
+    @classmethod
+    def create_from_model(cls, object: FinancialNewsItemModel, session: Session):
         try:
-            self.session.add(object)
-            self.session.commit()
+            session.add(object)
+            session.commit()
             return object
         except SQLAlchemyError as e:
-            self.session.rollback()
+            session.rollback()
             log.error(f"Error creating char interval: {str(e)}")
             raise
 
-    def get_by_source(self, source_name: str):
+    @classmethod
+    def get_by_source(cls, source_name: str, session: Session):
         try:
             stmt = select(FinancialNewsItemModel).join(NewsSourceModel).where(NewsSourceModel.name == source_name)
-            result = self.session.execute(stmt).scalars().all()
+            result = session.execute(stmt).scalars().all()
             return result
         except SQLAlchemyError as e:
             log.error(f"Error getting news items by source: {str(e)}")

@@ -1,21 +1,20 @@
-"""initial migration
+"""Initial migration
 
-Revision ID: 9b16ef8f6f1e
+Revision ID: 01d788a33bff
 Revises:
-Create Date: 2025-08-31 21:13:19.638843
+Create Date: 2025-09-01 00:21:17.918626
 
 """
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 from src.core.database.custom_types import TZDateTime
 
-
 # revision identifiers, used by Alembic.
-revision: str = "9b16ef8f6f1e"
+revision: str = "01d788a33bff"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -54,7 +53,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("name"),
     )
     op.create_table(
-        "rangebucketbuyordermodel",
+        "range_bucket_buy_order",
         sa.Column("start_price", sa.Float(), nullable=False),
         sa.Column("end_price", sa.Float(), nullable=False),
         sa.Column("num_buckets", sa.Integer(), nullable=True),
@@ -73,7 +72,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
-        "trailingstopbuyordermodel",
+        "trailing_stop_buy_order",
         sa.Column("max_price", sa.Float(), nullable=False),
         sa.Column("lowest_price", sa.Float(), nullable=False),
         sa.Column("trailing_amount", sa.Float(), nullable=True),
@@ -91,7 +90,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
-        "trailingstopsellordermodel",
+        "trailing_stop_sell_order",
         sa.Column("min_price", sa.Float(), nullable=False),
         sa.Column("highest_price", sa.Float(), nullable=False),
         sa.Column("trailing_amount", sa.Float(), nullable=True),
@@ -162,7 +161,7 @@ def upgrade() -> None:
         sa.Column("updated_on", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["order_id"],
-            ["rangebucketbuyordermodel.id"],
+            ["range_bucket_buy_order.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -216,10 +215,11 @@ def downgrade() -> None:
     op.drop_table("language_extraction_examples")
     op.drop_table("financial_news")
     op.drop_table("annotated_documents")
-    op.drop_table("trailingstopsellordermodel")
-    op.drop_table("trailingstopbuyordermodel")
-    op.drop_table("rangebucketbuyordermodel")
+    op.drop_table("trailing_stop_sell_order")
+    op.drop_table("trailing_stop_buy_order")
+    op.drop_table("range_bucket_buy_order")
     op.drop_table("news_sources")
     op.drop_table("language_extraction_job_types")
     op.drop_table("documents")
+    # ### end Alembic commands ###
     # ### end Alembic commands ###

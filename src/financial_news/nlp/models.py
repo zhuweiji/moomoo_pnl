@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 import langextract as lx
 from langextract.data import AlignmentStatus
-from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import mapped_column, relationship
 
 from src.core.database import BaseModel, engine
 from src.core.utilities import get_logger
@@ -14,10 +14,10 @@ log = get_logger(__name__)
 class DocumentModel(BaseModel):
     __tablename__ = "documents"
 
-    id = Column(Integer, primary_key=True)
-    document_id = Column(String, unique=True, nullable=False)
-    text = Column(String, nullable=False)
-    additional_context = Column(String)
+    id = mapped_column(Integer, primary_key=True)
+    document_id = mapped_column(String, unique=True, nullable=False)
+    text = mapped_column(String, nullable=False)
+    additional_context = mapped_column(String)
 
     # Relationships
     annotations = relationship("AnnotatedDocumentModel", back_populates="document")
@@ -35,9 +35,9 @@ class DocumentModel(BaseModel):
 class AnnotatedDocumentModel(BaseModel):
     __tablename__ = "annotated_documents"
 
-    id = Column(Integer, primary_key=True)
-    document_id = Column(String, ForeignKey("documents.document_id"), nullable=False)
-    text = Column(String)
+    id = mapped_column(Integer, primary_key=True)
+    document_id = mapped_column(String, ForeignKey("documents.document_id"), nullable=False)
+    text = mapped_column(String)
 
     # Relationships
     document = relationship("DocumentModel", back_populates="annotations")
@@ -63,10 +63,10 @@ class AnnotatedDocumentModel(BaseModel):
 class CharIntervalModel(BaseModel):
     __tablename__ = "char_intervals"
 
-    id = Column(Integer, primary_key=True)
-    start_pos = Column(Integer)
-    end_pos = Column(Integer)
-    extraction_id = Column(Integer, ForeignKey("extractions.id"))
+    id = mapped_column(Integer, primary_key=True)
+    start_pos = mapped_column(Integer)
+    end_pos = mapped_column(Integer)
+    extraction_id = mapped_column(Integer, ForeignKey("extractions.id"))
 
     # Relationships
     extraction = relationship("ExtractionModel", back_populates="char_interval")
@@ -84,16 +84,16 @@ class CharIntervalModel(BaseModel):
 class ExtractionModel(BaseModel):
     __tablename__ = "extractions"
 
-    id = Column(Integer, primary_key=True)
-    extraction_class = Column(String, nullable=False)
-    extraction_text = Column(String, nullable=False)
-    alignment_status = Column(Enum(AlignmentStatus))
-    extraction_index = Column(Integer)
-    group_index = Column(Integer)
-    description = Column(String)
-    attributes = Column(JSON)
-    annotated_document_id = Column(Integer, ForeignKey("annotated_documents.id"))
-    example_id = Column(Integer, ForeignKey("language_extraction_examples.id"))
+    id = mapped_column(Integer, primary_key=True)
+    extraction_class = mapped_column(String, nullable=False)
+    extraction_text = mapped_column(String, nullable=False)
+    alignment_status = mapped_column(Enum(AlignmentStatus))
+    extraction_index = mapped_column(Integer)
+    group_index = mapped_column(Integer)
+    description = mapped_column(String)
+    attributes = mapped_column(JSON)
+    annotated_document_id = mapped_column(Integer, ForeignKey("annotated_documents.id"))
+    example_id = mapped_column(Integer, ForeignKey("language_extraction_examples.id"))
 
     # Relationships
     char_interval = relationship("CharIntervalModel", back_populates="extraction", uselist=False)
@@ -137,9 +137,9 @@ class ExtractionModel(BaseModel):
 class LanguageExtractionExampleModel(BaseModel):
     __tablename__ = "language_extraction_examples"
 
-    id = Column(Integer, primary_key=True)
-    text = Column(String, nullable=False)
-    job_type_id = Column(Integer, ForeignKey("language_extraction_job_types.id"))
+    id = mapped_column(Integer, primary_key=True)
+    text = mapped_column(String, nullable=False)
+    job_type_id = mapped_column(Integer, ForeignKey("language_extraction_job_types.id"))
 
     # Relationships
     job_type = relationship("LanguageExtractionJobTypeModel", back_populates="examples")
@@ -195,9 +195,9 @@ class LanguageExtractionJobType:
 class LanguageExtractionJobTypeModel(BaseModel):
     __tablename__ = "language_extraction_job_types"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, default="UnnamedJobType")
-    prompt = Column(String, nullable=False)
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String, nullable=False, default="UnnamedJobType")
+    prompt = mapped_column(String, nullable=False)
 
     # Relationships
     examples = relationship("LanguageExtractionExampleModel", back_populates="job_type")

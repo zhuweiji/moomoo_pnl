@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pydantic
 from pydantic import ConfigDict
-from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import mapped_column, relationship
 
 from src.core.database import BaseModel, SessionMaker, engine
 from src.core.database.custom_types import TZDateTime
@@ -40,8 +40,8 @@ class FinancialNewsItem(pydantic.BaseModel, frozen=True):
 class NewsSourceModel(BaseModel):
     __tablename__ = "news_sources"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True, nullable=False)
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String, unique=True, nullable=False)
 
     # relationships
     news_items = relationship("FinancialNewsItemModel", back_populates="source")
@@ -50,23 +50,21 @@ class NewsSourceModel(BaseModel):
 class FinancialNewsItemModel(BaseModel):
     __tablename__ = "financial_news"
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String)
-    description = Column(String)
-    link = Column(String)
-    source_id = Column(Integer, ForeignKey("news_sources.id"), nullable=False)
-    published = Column(TZDateTime, nullable=True)
+    id = mapped_column(Integer, primary_key=True)
+    title = mapped_column(String)
+    description = mapped_column(String)
+    link = mapped_column(String)
+    source_id = mapped_column(Integer, ForeignKey("news_sources.id"), nullable=False)
+    published = mapped_column(TZDateTime, nullable=True)
 
     # Relationships
     source = relationship("NewsSourceModel", back_populates="news_items")
 
     @classmethod
     def from_dataclass(cls, item: FinancialNewsItem) -> "FinancialNewsItemModel":
-        from .repositories import NewsSourceRepository
+        from src.financial_news.repositories import NewsSourceRepository
 
-        repository = NewsSourceRepository(session=SessionMaker())
-
-        source = repository.get_or_create(name=item.source)
+        source = NewsSourceRepository.get_or_create(name=item.source, session=NewsSourceRepository.get_db_session())
 
         return cls(
             title=item.title,

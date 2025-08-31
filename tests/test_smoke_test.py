@@ -17,7 +17,6 @@ from src.core.utilities import get_logger
 log = get_logger(__name__)
 
 
-@pytest.mark.skipif("skip by default")
 def test_run_smoke_test():
     """Run the service for 5 seconds and check if it starts successfully."""
 

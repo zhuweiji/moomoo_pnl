@@ -5,8 +5,8 @@ from typing import Collection, Dict, Generic, List, Optional, Sequence, Type, Ty
 
 from sqlalchemy.orm import Session
 
+from src.core.database import BaseRepository
 from src.core.database.get_engine import SessionMaker
-from src.core.database.repository import BaseRepository
 from src.core.orders.models import CustomOrderStatus
 from src.core.orders.models2 import BaseCustomOrderModel, RangeBucketBuyOrderModel
 from src.core.utilities import get_logger
@@ -17,17 +17,8 @@ log = get_logger(__name__)
 T = TypeVar("T", bound=BaseCustomOrderModel)
 
 
-class BaseCustomOrderRepository:
-    model = None
-
-    @classmethod
-    def get_db_session(cls) -> Session:
-        """Get a new database session.
-
-        Returns:
-            A new SQLAlchemy Session
-        """
-        return SessionMaker()
+class BaseCustomOrderRepository(BaseRepository):
+    model: Type[BaseCustomOrderModel] = None  # type: ignore
 
     @classmethod
     def save(cls, items: Collection[T], session: Session) -> None:
@@ -87,7 +78,7 @@ class BaseCustomOrderRepository:
         Returns:
             Dictionary of orders with ID as key
         """
-        return session.query(cls.model).all()
+        return session.query(cls.model).all()  # type: ignore
 
     @classmethod
     def get_by_id(cls, order_id: str, session: Session) -> Optional[T]:
@@ -100,7 +91,7 @@ class BaseCustomOrderRepository:
         Returns:
             The order if found, None otherwise
         """
-        return session.query(cls.model).filter_by(id=order_id).first()
+        return session.query(cls.model).filter_by(id=order_id).first()  # type: ignore
 
     @classmethod
     def get_waiting_orders(cls, session: Session) -> List[T]:
@@ -112,7 +103,7 @@ class BaseCustomOrderRepository:
         Returns:
             List of active orders
         """
-        return session.query(cls.model).filter(cls.model.status == CustomOrderStatus.WAITING).all()
+        return session.query(cls.model).filter(cls.model.status == CustomOrderStatus.WAITING).all()  # type: ignore
 
     @classmethod
     def get_by_status(cls, status: CustomOrderStatus, session: Session) -> List[T]:
@@ -125,7 +116,7 @@ class BaseCustomOrderRepository:
         Returns:
             List of orders with the specified status
         """
-        return session.query(cls.model).filter(cls.model.status == status).all()
+        return session.query(cls.model).filter(cls.model.status == status).all()  # type: ignore
 
     @classmethod
     def delete(cls, order_id: str, session: Session) -> bool:
