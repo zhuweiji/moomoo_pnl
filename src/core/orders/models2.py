@@ -178,3 +178,137 @@ class RangeBucketBuyOrderModel(BaseCustomOrderModel):
 
         triggered = sum(1 for bucket in self.buckets if bucket.is_triggered)
         return (triggered / total_buckets) * 100.0
+
+
+class TrailingStopSellOrderModel(BaseCustomOrderModel):
+    """
+    SQLAlchemy model for a custom order that sells when price drops by a specified
+    amount or percentage from its highest point.
+    """
+
+    min_price = mapped_column(Float, nullable=False)
+    highest_price = mapped_column(Float, default=0, nullable=False)
+    trailing_amount = mapped_column(Float, nullable=True)
+    trailing_percent = mapped_column(Float, nullable=True)
+
+    @validates("min_price", "trailing_amount", "trailing_percent")
+    def validate_fields(self, key, value):
+        """Validate model fields."""
+        if key == "min_price" and value <= 0:
+            raise ValueError("Minimum price must be positive")
+        if key == "trailing_amount" and value is not None and value <= 0:
+            raise ValueError("Trailing amount must be positive")
+        if key == "trailing_percent" and value is not None and (value <= 0 or value >= 100):
+            raise ValueError("Trailing percent must be between 0 and 100")
+        return value
+
+    def validate(self):
+        """Validate all parameters for the order."""
+        super().validate()
+
+        if (self.trailing_amount is None and self.trailing_percent is None) or (
+            self.trailing_amount is not None and self.trailing_percent is not None
+        ):
+            raise ValueError("Must specify exactly one of: trailing_amount or trailing_percent")
+
+    def __init__(self, **kwargs):
+        """Initialize the model with validation."""
+        super().__init__(**kwargs)
+        self.validate()
+
+    def get_trigger_price(self) -> Optional[float]:
+        """Calculate the price that would trigger this order."""
+        if self.highest_price == 0:
+            return None
+
+        if self.trailing_amount is not None:
+            return self.highest_price - self.trailing_amount
+        elif self.trailing_percent is not None:
+            return self.highest_price * (1 - self.trailing_percent / 100)
+        return None
+
+    def should_trigger(self, current_price: float) -> bool:
+        """Check if the order should be triggered based on current price."""
+        if self.status != CustomOrderStatus.WAITING:
+            return False
+
+        # Update highest price if we see a new high
+        if current_price > self.highest_price:
+            self.highest_price = current_price
+            return False
+
+        # Get trigger price
+        trigger_price = self.get_trigger_price()
+        if trigger_price is None:
+            return False
+
+        # Check if conditions are met
+        return current_price <= trigger_price and current_price >= self.min_price and self.highest_price >= self.min_price
+
+
+class TrailingStopBuyOrderModel(BaseCustomOrderModel):
+    """
+    SQLAlchemy model for a custom order that buys when price rises by a specified
+    amount or percentage from its lowest point.
+    """
+
+    max_price = mapped_column(Float, nullable=False)
+    lowest_price = mapped_column(Float, default=float(1e10), nullable=False)
+    trailing_amount = mapped_column(Float, nullable=True)
+    trailing_percent = mapped_column(Float, nullable=True)
+
+    @validates("max_price", "trailing_amount", "trailing_percent")
+    def validate_fields(self, key, value):
+        """Validate model fields."""
+        if key == "max_price" and value <= 0:
+            raise ValueError("Maximum price must be positive")
+        if key == "trailing_amount" and value is not None and value <= 0:
+            raise ValueError("Trailing amount must be positive")
+        if key == "trailing_percent" and value is not None and (value <= 0 or value >= 100):
+            raise ValueError("Trailing percent must be between 0 and 100")
+        return value
+
+    def validate(self):
+        """Validate all parameters for the order."""
+        super().validate()
+
+        if (self.trailing_amount is None and self.trailing_percent is None) or (
+            self.trailing_amount is not None and self.trailing_percent is not None
+        ):
+            raise ValueError("Must specify exactly one of: trailing_amount or trailing_percent")
+
+    def __init__(self, **kwargs):
+        """Initialize the model with validation."""
+        super().__init__(**kwargs)
+        self.validate()
+
+    def update_lowest_price(self, current_price: float) -> None:
+        """Update the lowest price if current price is lower."""
+        if self.lowest_price == float(1e10) or current_price < self.lowest_price:
+            self.lowest_price = current_price
+
+    def get_trigger_price(self) -> Optional[float]:
+        """Calculate the price that would trigger this order."""
+        if self.lowest_price == float(1e10):
+            return None
+
+        if self.trailing_amount is not None:
+            return self.lowest_price + self.trailing_amount
+        elif self.trailing_percent is not None:
+            return self.lowest_price * (1 + self.trailing_percent / 100)
+        return None
+
+    def should_trigger(self, current_price: float) -> bool:
+        """Check if the order should be triggered based on current price."""
+        if self.status != CustomOrderStatus.WAITING:
+            return False
+
+        self.update_lowest_price(current_price)
+
+        # Get trigger price
+        trigger_price = self.get_trigger_price()
+        if trigger_price is None:
+            return False
+
+        # Check if conditions are met
+        return current_price >= trigger_price and current_price <= self.max_price and self.lowest_price <= self.max_price

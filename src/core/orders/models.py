@@ -86,138 +86,8 @@ class CustomOrderStatus(Enum):
     ERROR = "error"  # Error occurred during execution
 
 
-@dataclass(kw_only=True)
-class BaseCustomOrder(ABC):
-    """Base class for all custom stock orders."""
-
-    # Core order fields
-    id: str
-    stock_code: str
-    quantity: int
-
-    # Status and timing
-    status: CustomOrderStatus = CustomOrderStatus.WAITING
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
-
-    # Tracking fields
-    last_checked_price: Optional[float] = None
-    last_check_time: Optional[datetime] = None
-
-    # Error handling and notes
-    error_message: Optional[str] = None
-    comments: Optional[str] = None
-
-    def validate(self) -> None:
-        """Validate common parameters for all order types.
-
-        Subclasses implementing their own should run super.validate() from their parents"""
-        if self.quantity <= 0:
-            raise ValueError("Quantity must be positive")
-
-    @abstractmethod
-    def get_trigger_price(self) -> Optional[float]:
-        """Calculate the price that would trigger this order."""
-        pass
-
-    @abstractmethod
-    def should_trigger(self, current_price: float) -> bool:
-        """Check if the order should be triggered based on current price."""
-        pass
-
-
-# TODO incorporate this new order - add service and register with the manager
-@dataclass(kw_only=True)
-class RangeBucketBuyOrder(BaseCustomOrder):
-    """
-    A custom order that buys across a range of prices divided into buckets.
-    Either specify num_buckets or bucket_size, but not both.
-    """
-
-    start_price: float
-    end_price: float
-    num_buckets: Optional[int] = None
-    bucket_size: Optional[float] = None
-
-    triggered_buckets: list[float] = field(default_factory=list)
-    buckets: list[float] = field(init=False)
-
-    # should add utility properties like total price of order
-
-    def validate(self):
-        super().validate()
-
-        if self.start_price >= self.end_price:
-            raise ValueError("start_price must be less than end_price")
-
-        if self.num_buckets and self.bucket_size:
-            raise ValueError("Specify only one: num_buckets or bucket_size")
-
-        if not self.num_buckets and not self.bucket_size:
-            raise ValueError("Must specify either num_buckets or bucket_size")
-
-    def __post_init__(self):
-        # Create buckets
-        self.validate()
-        self.buckets = self._generate_buckets()
-        # Validate total quantity distribution (could extend here)
-
-    def get_trigger_price(self) -> Optional[float]:
-        """
-        Return the next untriggered bucket price that should trigger.
-        """
-        for price in self.buckets:
-            if price not in self.triggered_buckets:
-                return price
-        return None  # All buckets triggered
-
-    def should_trigger(self, current_price: float) -> bool:
-        """
-        Check if current price matches an untriggered bucket.
-        """
-        # Use some tolerance because of float precision issues
-        tolerance = 1e-2
-        for price in self.buckets:
-            if price not in self.triggered_buckets:
-                if abs(current_price - price) <= tolerance:
-                    return True
-        return False
-
-    def _generate_buckets(self) -> list[float]:
-        """Generate the list of bucket prices."""
-        if self.num_buckets:
-            step = (self.end_price - self.start_price) / (self.num_buckets - 1)
-            return [round(self.start_price + i * step, 4) for i in range(self.num_buckets)]
-
-        else:
-            assert self.bucket_size
-            num_buckets = math.floor((self.end_price - self.start_price) / self.bucket_size) + 1
-            return [
-                round(self.start_price + i * self.bucket_size, 4)
-                for i in range(num_buckets)
-                if self.start_price + i * self.bucket_size <= self.end_price + 1e-8
-            ]
-
-    def mark_bucket_triggered(self, price: float):
-        """
-        Mark a bucket price as triggered (after placing order).
-        """
-        if price in self.buckets and price not in self.triggered_buckets:
-            self.triggered_buckets.append(price)
-            self.updated_at = datetime.now()
-            if len(self.triggered_buckets) == len(self.buckets):
-                self.status = CustomOrderStatus.COMPLETED
-
-    def remaining_buckets(self) -> list[float]:
-        """
-        Get list of remaining bucket prices not yet triggered.
-        """
-        return [price for price in self.buckets if price not in self.triggered_buckets]
-
-
 @dataclass
 class CustomTrailingStopSellOrder:
-    # todo - this dataclass should inherit from BaseCustomOrder
     """Represents a trailing stop order."""
 
     id: str
@@ -303,7 +173,6 @@ class CustomTrailingStopSellOrder:
 
 @dataclass
 class CustomTrailingStopBuyOrder:
-    # todo - this dataclass should inherit from BaseCustomOrder
     """Represents a trailing stop buy order."""
 
     id: str

@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 
 from src.core.database.repository import BaseRepository
 from src.core.orders.models import (
-    BaseCustomOrder,
     CustomOrderStatus,
     CustomTrailingStopBuyOrder,
     CustomTrailingStopSellOrder,

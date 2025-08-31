@@ -1,40 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
-from src.core.database.model import BaseModel
 from src.core.orders.models import CustomOrderStatus
-from src.core.orders.models2 import (
-    BaseCustomOrderModel,
-    PriceBucket,
-    RangeBucketBuyOrderModel,
-)
+from src.core.orders.models2 import PriceBucket, RangeBucketBuyOrderModel
 
-
-# Create a concrete subclass for testing the abstract base class
-class TestOrderModel(BaseCustomOrderModel):
-    """Concrete implementation of BaseCustomOrderModel for testing."""
-
-    def get_trigger_price(self):
-        return 100.0
-
-    def should_trigger(self, current_price):
-        return current_price >= 100.0
-
-
-@pytest.fixture(scope="function")
-def db_session():
-    """Create an in-memory database session for testing."""
-    engine = create_engine("sqlite:///:memory:")
-    BaseModel.metadata.create_all(engine)
-    TestSessionLocal = sessionmaker(bind=engine)
-    session = TestSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+from .conftest import TestOrderModel
 
 
 class TestBaseCustomOrderModel:
@@ -293,4 +264,5 @@ class TestRangeBucketBuyOrderModel:
 
         # Verify buckets were deleted
         buckets = db_session.query(PriceBucket).filter_by(order_id="db-test").all()
+        assert len(buckets) == 0
         assert len(buckets) == 0

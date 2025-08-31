@@ -217,7 +217,3 @@ class LanguageExtractionJobTypeModel(BaseModel):
             examples = [example.to_langextract() for example in self.examples]
 
         return LanguageExtractionJobType(prompt=str(self.prompt), name=str(self.name), examples=examples)
-
-
-# target for alembic replacement
-BaseModel.metadata.create_all(engine)

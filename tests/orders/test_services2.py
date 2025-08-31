@@ -1,35 +1,14 @@
-import os
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.core.database import BaseModel
 from src.core.orders.models2 import (
     CustomOrderStatus,
     PriceBucket,
     RangeBucketBuyOrderModel,
 )
 from src.core.orders.services2 import RangeBucketBuyOrderService
-
-
-@pytest.fixture
-def db_engine():
-    """Create an in-memory SQLite database engine."""
-    engine = create_engine("sqlite:///:memory:")
-    BaseModel.metadata.create_all(engine)
-    return engine
-
-
-@pytest.fixture
-def db_session(db_engine):
-    """Create a database session."""
-    Session = sessionmaker(bind=db_engine)
-    session = Session()
-    yield session
-    session.close()
 
 
 @pytest.fixture

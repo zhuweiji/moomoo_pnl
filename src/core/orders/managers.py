@@ -11,14 +11,12 @@ from src.core.orders.models import (
     CustomOrderStatus,
     CustomTrailingStopBuyOrder,
     CustomTrailingStopSellOrder,
-    RangeBucketBuyOrder,
 )
 from src.core.orders.repositories import TrailingStopOrderRepository
 from src.core.orders.services import (
     OrderService,
     TrailingStopBuyOrderService,
     TrailingStopSellOrderService,
-    RangeBucketBuyOrderService,
 )
 from src.core.utilities import get_logger
 
@@ -42,7 +40,6 @@ class OrderManager:
         self.services: Dict[Type, OrderService] = {
             CustomTrailingStopSellOrder: TrailingStopSellOrderService(self.is_simulated_env),
             CustomTrailingStopBuyOrder: TrailingStopBuyOrderService(self.is_simulated_env),
-            RangeBucketBuyOrder: RangeBucketBuyOrderService(self.is_simulated_env),
         }
         self.repository = TrailingStopOrderRepository(self._get_storage_path())
         self.check_interval = check_interval_seconds

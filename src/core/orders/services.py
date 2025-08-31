@@ -14,7 +14,6 @@ from src.core.orders.models import (
     CustomOrderStatus,
     CustomTrailingStopBuyOrder,
     CustomTrailingStopSellOrder,
-    RangeBucketBuyOrder,
 )
 from src.core.utilities import get_logger
 

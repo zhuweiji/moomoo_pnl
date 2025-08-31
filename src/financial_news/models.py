@@ -84,7 +84,3 @@ class FinancialNewsItemModel(BaseModel):
             source=str(self.source.name),
             published=self.published,  # type: ignore
         )
-
-
-# target for alembic replacement
-BaseModel.metadata.create_all(engine)

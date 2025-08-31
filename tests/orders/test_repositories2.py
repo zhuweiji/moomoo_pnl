@@ -1,25 +1,22 @@
 from datetime import datetime
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.core.database.model import BaseModel
 from src.core.orders.models import CustomOrderStatus
-from src.core.orders.models2 import BaseCustomOrderModel
 from src.core.orders.repositories2 import BaseCustomOrderRepository
 from tests.orders.test_models2 import TestOrderModel
 
+from .conftest import TestOrderModel
+
 
 class TestOrderRepository(BaseCustomOrderRepository):
-    def __init__(self):
-        super().__init__(model=TestOrderModel)
+    model = TestOrderModel
 
 
 @pytest.fixture
-def order_repository(db_session):
+def order_repository():
     """Create an order repository."""
-    return TestOrderRepository(db_session)
+    return TestOrderRepository
 
 
 @pytest.fixture
@@ -128,4 +125,6 @@ def test_get_by_status(db_session, order_repository, test_order):
     assert waiting_orders[0].id == "test-order-1"
 
     assert len(executed_orders) == 1
+    assert executed_orders[0].id == "test-order-2"
+    assert executed_orders[0].id == "test-order-2"
     assert executed_orders[0].id == "test-order-2"
