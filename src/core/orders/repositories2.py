@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from src.core.database import BaseRepository
 from src.core.database.get_engine import SessionMaker
 from src.core.orders.models import CustomOrderStatus
-from src.core.orders.models2 import BaseCustomOrderModel, RangeBucketBuyOrderModel
+from src.core.orders.models2 import (
+    BaseCustomOrderModel,
+    RangeBucketBuyOrderModel,
+    TrailingStopBuyOrderModel,
+    TrailingStopSellOrderModel,
+)
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
@@ -139,3 +144,11 @@ class BaseCustomOrderRepository(BaseRepository):
 
 class RangeBucketBuyOrderRepository(BaseCustomOrderRepository):
     model = RangeBucketBuyOrderModel
+
+
+class TrailingStopBuyOrderRepository(BaseCustomOrderRepository):
+    model = TrailingStopBuyOrderModel
+
+
+class TrailingStopSellOrderRepository(BaseCustomOrderRepository):
+    model = TrailingStopSellOrderModel

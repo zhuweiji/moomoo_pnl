@@ -8,11 +8,7 @@ from sqlalchemy import Enum as SQLAEnum
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import (
-    mapped_column,
-    relationship,
-    validates,
-)
+from sqlalchemy.orm import mapped_column, relationship, validates
 
 from src.core.database.custom_types import TZDateTime
 from src.core.database.model import BaseModel
