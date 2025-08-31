@@ -74,7 +74,7 @@ class BaseCustomOrderRepository(BaseRepository):
                 setattr(target, c.name, getattr(source, c.name))
 
     @classmethod
-    def get_all(cls, session: Session) -> Sequence[T]:
+    def get_all(cls, session: Session) -> List[T]:
         """Load all orders from the database.
 
         Args:

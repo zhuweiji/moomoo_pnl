@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from moomoo import RET_OK, TrdSide
 from moomoo.common.constant import OrderType, TimeInForce, TrdEnv
 
+from src.core.external_data_services.stock_data.yfinance import get_stock_price
+from src.core.moomoo_client import MoomooClient
 from src.core.orders.models2 import (
     CustomOrderStatus,
     PriceBucketModel,
@@ -13,14 +15,52 @@ from src.core.orders.models2 import (
     TrailingStopSellOrderModel,
 )
 from src.core.orders.repositories2 import (
+    BaseCustomOrderRepository,
     RangeBucketBuyOrderRepository,
     TrailingStopBuyOrderRepository,
     TrailingStopSellOrderRepository,
 )
-from src.core.orders.services import MoomooClient, OrderService, TrdEnv, get_stock_price
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
+
+
+class OrderService(ABC):
+    """Base class for order services."""
+
+    def __init__(self, is_simulated_env: bool = False):
+        self.is_simulated_env = is_simulated_env
+        self.repository: type[BaseCustomOrderRepository] = None  # type: ignore
+
+    @abstractmethod
+    def validate_new_order(self, order, positions) -> None:
+        """Validate a new order can be placed."""
+        pass
+
+    @abstractmethod
+    def can_cancel_order(self, order) -> bool:
+        """Check if an order can be cancelled."""
+        pass
+
+    @abstractmethod
+    def is_order_waiting(self, order) -> bool:
+        """Check if an order is in waiting status."""
+        pass
+
+    @abstractmethod
+    def get_current_price(self, order, positions):
+        """Get current price for the order's stock."""
+        pass
+
+    @abstractmethod
+    def execute_order(self, order) -> None:
+        """Execute the order."""
+        pass
+
+    @abstractmethod
+    def set_error_status(self, order, error_msg: str) -> None:
+        """Set order status to error with message."""
+        pass
 
 
 class RangeBucketBuyOrderService(OrderService):
