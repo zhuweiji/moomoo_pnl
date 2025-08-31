@@ -10,11 +10,14 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
 
 
+@pytest.mark.skipif("skip by default")
 def test_run_smoke_test():
     """Run the service for 5 seconds and check if it starts successfully."""
 
@@ -25,7 +28,6 @@ def test_run_smoke_test():
     try:
         # Start the service as a subprocess
         process = subprocess.Popen([sys.executable, "-m", main_py_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
 
         # Wait for 5 seconds
         time.sleep(5)

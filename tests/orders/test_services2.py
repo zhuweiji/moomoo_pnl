@@ -5,7 +5,7 @@ import pytest
 
 from src.core.orders.models2 import (
     CustomOrderStatus,
-    PriceBucket,
+    PriceBucketModel,
     RangeBucketBuyOrderModel,
 )
 from src.core.orders.services2 import RangeBucketBuyOrderService
@@ -34,9 +34,9 @@ def sample_order():
         num_buckets=3,
         status=CustomOrderStatus.WAITING.value,
         buckets=[
-            PriceBucket(price=150.0, is_triggered=False),
-            PriceBucket(price=145.0, is_triggered=False),
-            PriceBucket(price=140.0, is_triggered=False),
+            PriceBucketModel(price=150.0, is_triggered=False),
+            PriceBucketModel(price=145.0, is_triggered=False),
+            PriceBucketModel(price=140.0, is_triggered=False),
         ],
         created_on=datetime.now(),
         updated_on=datetime.now(),

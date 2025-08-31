@@ -79,32 +79,14 @@ class TestFinancialNewItemJsonFileRepository:
             assert loaded_item.published == news_items[i].published
 
 
-@pytest.fixture(scope="function")
-def engine():
-    """Create a test database engine."""
-    engine = create_engine("sqlite:///:memory:")
-    BaseModel.metadata.create_all(engine)
-    yield engine
-    BaseModel.metadata.drop_all(engine)
-
-
-@pytest.fixture(scope="function")
-def session(engine):
-    """Create a new database session for a test."""
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+@pytest.fixture
+def source_repo(db_session):
+    return NewsSourceRepository(db_session)
 
 
 @pytest.fixture
-def source_repo(session):
-    return NewsSourceRepository(session)
-
-
-@pytest.fixture
-def news_repo(session):
-    return FinancialNewsItemModelRepository(session)
+def news_repo(db_session):
+    return FinancialNewsItemModelRepository(db_session)
 
 
 class TestNewsSourceRepository:

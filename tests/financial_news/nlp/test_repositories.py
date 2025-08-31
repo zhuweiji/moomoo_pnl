@@ -5,7 +5,7 @@ import langextract as lx
 from langextract.data import AlignmentStatus
 
 from src.core.database import BaseModel
-from src.nlp.repositories import (
+from src.financial_news.nlp.repositories import (
     DocumentRepository,
     AnnotatedDocumentRepository,
     ExtractionRepository,
@@ -13,59 +13,41 @@ from src.nlp.repositories import (
     LanguageExtractionExampleRepository,
     LanguageExtractionJobTypeRepository,
 )
-from src.nlp.models import DocumentModel, AnnotatedDocumentModel, ExtractionModel, CharIntervalModel
+from src.financial_news.nlp.models import DocumentModel, AnnotatedDocumentModel, ExtractionModel, CharIntervalModel
 
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)
 
 
-@pytest.fixture(scope="function")
-def engine():
-    """Create a test database engine."""
-    engine = create_engine("sqlite:///:memory:")
-    BaseModel.metadata.create_all(engine)
-    yield engine
-    BaseModel.metadata.drop_all(engine)
-
-
-@pytest.fixture(scope="function")
-def session(engine):
-    """Create a new database session for a test."""
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+@pytest.fixture
+def document_repo(db_session):
+    return DocumentRepository(db_session)
 
 
 @pytest.fixture
-def document_repo(session):
-    return DocumentRepository(session)
+def annotated_document_repo(db_session):
+    return AnnotatedDocumentRepository(db_session)
 
 
 @pytest.fixture
-def annotated_document_repo(session):
-    return AnnotatedDocumentRepository(session)
+def extraction_repo(db_session):
+    return ExtractionRepository(db_session)
 
 
 @pytest.fixture
-def extraction_repo(session):
-    return ExtractionRepository(session)
+def char_interval_repo(db_session):
+    return CharIntervalRepository(db_session)
 
 
 @pytest.fixture
-def char_interval_repo(session):
-    return CharIntervalRepository(session)
+def job_type_repo(db_session):
+    return LanguageExtractionJobTypeRepository(db_session)
 
 
 @pytest.fixture
-def job_type_repo(session):
-    return LanguageExtractionJobTypeRepository(session)
-
-
-@pytest.fixture
-def example_repo(session):
-    return LanguageExtractionExampleRepository(session)
+def example_repo(db_session):
+    return LanguageExtractionExampleRepository(db_session)
 
 
 class TestDocumentRepository:

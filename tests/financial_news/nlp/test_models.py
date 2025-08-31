@@ -6,7 +6,7 @@ from langextract.data import CharInterval as LxCharInterval
 from langextract.data import AlignmentStatus
 from langextract.data import ExampleData as LxExampleData
 
-from src.nlp.models import (
+from src.financial_news.nlp.models import (
     DocumentModel,
     AnnotatedDocumentModel,
     ExtractionModel,

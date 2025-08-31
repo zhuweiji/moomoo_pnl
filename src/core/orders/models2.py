@@ -9,10 +9,7 @@ from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
     mapped_column,
-    registry,
     relationship,
     validates,
 )
@@ -43,10 +40,6 @@ class BaseCustomOrderModel(BaseModel):
     error_message = mapped_column(String, nullable=True)
     comments = mapped_column(String, nullable=True)
 
-    @declared_attr  # type: ignore
-    def __tablename__(cls):
-        return cls.__name__.lower()
-
     def validate(self):
         """Validate common parameters for all order types."""
         if self.quantity <= 0:
@@ -61,13 +54,13 @@ class BaseCustomOrderModel(BaseModel):
         raise NotImplementedError("Subclasses must implement should_trigger()")
 
 
-class PriceBucket(BaseModel):
+class PriceBucketModel(BaseModel):
     """Model for individual price buckets within a range order."""
 
     __tablename__ = "price_bucket"
 
     id = mapped_column(Integer, primary_key=True)
-    order_id = mapped_column(String, ForeignKey("rangebucketbuyordermodel.id"), nullable=False)
+    order_id = mapped_column(String, ForeignKey("range_bucket_buy_order.id"), nullable=False)
     price = mapped_column(Float, nullable=False)
     is_triggered = mapped_column(Boolean, default=False, nullable=False)
     trigger_time = mapped_column(TZDateTime, nullable=True)
@@ -84,6 +77,8 @@ class RangeBucketBuyOrderModel(BaseCustomOrderModel):
     Either specify num_buckets or bucket_size, but not both.
     """
 
+    __tablename__ = "range_bucket_buy_order"
+
     start_price = mapped_column(Float, nullable=False)
     end_price = mapped_column(Float, nullable=False)
     num_buckets = mapped_column(Integer, nullable=True)
@@ -91,7 +86,9 @@ class RangeBucketBuyOrderModel(BaseCustomOrderModel):
     price_tolerance = mapped_column(Float, nullable=False, default=1e-2)
 
     # Relationship to bucket data
-    buckets = relationship("PriceBucket", cascade="all, delete-orphan", order_by="PriceBucket.position", collection_class=ordering_list("position"))
+    buckets = relationship(
+        "PriceBucketModel", cascade="all, delete-orphan", order_by="PriceBucketModel.position", collection_class=ordering_list("position")
+    )
 
     @validates("start_price", "end_price", "num_buckets", "bucket_size")
     def validate_fields(self, key, value):
@@ -135,14 +132,14 @@ class RangeBucketBuyOrderModel(BaseCustomOrderModel):
             step = (self.end_price - self.start_price) / (self.num_buckets - 1) if self.num_buckets > 1 else 0
             for i in range(self.num_buckets):
                 price = smart_round(self.start_price + i * step)
-                self.buckets.append(PriceBucket(price=price))
+                self.buckets.append(PriceBucketModel(price=price))
         else:
             assert self.bucket_size
             num_buckets = math.floor((self.end_price - self.start_price) / self.bucket_size) + 1
             for i in range(num_buckets):
                 price = self.start_price + i * self.bucket_size
                 if price <= self.end_price + 1e-8:
-                    self.buckets.append(PriceBucket(price=smart_round(price)))
+                    self.buckets.append(PriceBucketModel(price=smart_round(price)))
 
     def __init__(self, **kwargs):
         """Initialize the model and generate buckets."""
@@ -185,6 +182,8 @@ class TrailingStopSellOrderModel(BaseCustomOrderModel):
     SQLAlchemy model for a custom order that sells when price drops by a specified
     amount or percentage from its highest point.
     """
+
+    __tablename__ = "trailing_stop_sell_order"
 
     min_price = mapped_column(Float, nullable=False)
     highest_price = mapped_column(Float, default=0, nullable=False)
@@ -251,6 +250,8 @@ class TrailingStopBuyOrderModel(BaseCustomOrderModel):
     SQLAlchemy model for a custom order that buys when price rises by a specified
     amount or percentage from its lowest point.
     """
+
+    __tablename__ = "trailing_stop_buy_order"
 
     max_price = mapped_column(Float, nullable=False)
     lowest_price = mapped_column(Float, default=float(1e10), nullable=False)

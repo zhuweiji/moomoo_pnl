@@ -7,5 +7,4 @@ log = get_logger(__name__)
 
 engine = create_engine(SQLITE_DATABASE_URI)
 
-
 SessionMaker = sessionmaker(bind=engine)

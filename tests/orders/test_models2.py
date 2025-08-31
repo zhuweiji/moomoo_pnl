@@ -3,15 +3,14 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from src.core.orders.models import CustomOrderStatus
-from src.core.orders.models2 import PriceBucket, RangeBucketBuyOrderModel
-
-from .conftest import TestOrderModel
+from src.core.orders.models2 import BaseCustomOrderModel, PriceBucketModel, RangeBucketBuyOrderModel
+from tests.orders.shared import TestOrderModel
 
 
 class TestBaseCustomOrderModel:
     def test_table_name_generation(self):
         """Test that the tablename is correctly generated from the class name."""
-        assert TestOrderModel.__tablename__ == "testordermodel"  # type: ignore
+        assert TestOrderModel.__tablename__ == "test_order_model"
 
     def test_model_init(self, db_session):
         """Test that a model instance can be created with required fields."""
@@ -263,6 +262,6 @@ class TestRangeBucketBuyOrderModel:
         db_session.commit()
 
         # Verify buckets were deleted
-        buckets = db_session.query(PriceBucket).filter_by(order_id="db-test").all()
+        buckets = db_session.query(PriceBucketModel).filter_by(order_id="db-test").all()
         assert len(buckets) == 0
         assert len(buckets) == 0

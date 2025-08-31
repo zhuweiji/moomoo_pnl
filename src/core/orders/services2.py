@@ -7,7 +7,7 @@ from moomoo.common.constant import OrderType, TimeInForce, TrdEnv
 
 from src.core.orders.models2 import (
     CustomOrderStatus,
-    PriceBucket,
+    PriceBucketModel,
     RangeBucketBuyOrderModel,
 )
 from src.core.orders.repositories2 import RangeBucketBuyOrderRepository
@@ -124,7 +124,7 @@ class RangeBucketBuyOrderService(OrderService):
                 break
 
     @staticmethod
-    def get_remaining_buckets(order: RangeBucketBuyOrderModel) -> list[PriceBucket]:
+    def get_remaining_buckets(order: RangeBucketBuyOrderModel) -> list[PriceBucketModel]:
         """Get list of remaining bucket objects not yet triggered."""
         return [bucket for bucket in order.buckets if not bucket.is_triggered]
 
