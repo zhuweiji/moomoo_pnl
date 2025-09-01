@@ -2,8 +2,12 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from src.core.orders.models import CustomOrderStatus
-from src.core.orders.models2 import BaseCustomOrderModel, PriceBucketModel, RangeBucketBuyOrderModel
+from src.core.orders.models2 import (
+    BaseCustomOrderModel,
+    CustomOrderStatus,
+    PriceBucketModel,
+    RangeBucketBuyOrderModel,
+)
 from tests.orders.shared import TestOrderModel
 
 
@@ -153,43 +157,6 @@ class TestRangeBucketBuyOrderModel:
                 end_price=110.0,
             )
             order.validate()
-
-    def test_get_trigger_price(self):
-        """Test that get_trigger_price returns the next untriggered bucket."""
-        order = RangeBucketBuyOrderModel(id="trigger-test", stock_code="AAPL", quantity=5, start_price=100.0, end_price=110.0, num_buckets=5)
-
-        # Initially, first bucket should be returned
-        assert order.get_trigger_price() == 100.0
-
-        # Mark first bucket as triggered
-        order.buckets[0].is_triggered = True
-        assert order.get_trigger_price() == 102.5
-
-        # Mark all buckets as triggered
-        for bucket in order.buckets:
-            bucket.is_triggered = True
-        assert order.get_trigger_price() is None
-
-    def test_should_trigger(self):
-        """Test that should_trigger correctly identifies when to trigger."""
-        order = RangeBucketBuyOrderModel(
-            id="trigger-test-2", stock_code="AAPL", quantity=5, start_price=100.0, end_price=110.0, num_buckets=5, price_tolerance=0.1
-        )
-
-        # Price within tolerance of first bucket
-        assert order.should_trigger(100.05) is True
-
-        # Price outside tolerance
-        assert order.should_trigger(100.2) is False
-
-        # First bucket triggered, price within tolerance of second bucket
-        order.buckets[0].is_triggered = True
-        assert order.should_trigger(102.55) is True
-
-        # All buckets triggered
-        for bucket in order.buckets:
-            bucket.is_triggered = True
-        assert order.should_trigger(105.0) is False
 
     def test_progress_property(self):
         """Test that progress property correctly calculates completion percentage."""

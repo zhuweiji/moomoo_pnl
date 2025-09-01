@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from src.core.orders.models import CustomOrderStatus
+from src.core.orders.models2 import CustomOrderStatus
 from src.core.orders.repositories2 import BaseCustomOrderRepository
 from tests.orders.shared import TestOrderModel
 

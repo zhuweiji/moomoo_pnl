@@ -1,6 +1,7 @@
 import json
 import math
 from datetime import datetime
+from enum import Enum
 from typing import List, Optional
 
 from sqlalchemy import Boolean, DateTime
@@ -12,7 +13,16 @@ from sqlalchemy.orm import mapped_column, relationship, validates
 
 from src.core.database.custom_types import TZDateTime
 from src.core.database.model import BaseModel
-from src.core.orders.models import CustomOrderStatus
+
+
+class CustomOrderStatus(Enum):
+    """Status of a custom order."""
+
+    WAITING = "waiting"  # Waiting for conditions to be met
+    TRIGGERED = "triggered"  # Conditions met, market order being placed
+    COMPLETED = "completed"  # Market order executed
+    CANCELLED = "cancelled"  # Order was cancelled by user
+    ERROR = "error"  # Error occurred during execution
 
 
 class BaseCustomOrderModel(BaseModel):
@@ -161,7 +171,6 @@ class RangeBucketBuyOrderModel(BaseCustomOrderModel):
                     return True
         return False
 
-    # Only keeping essential properties and methods
     @property
     def progress(self) -> float:
         """Return the progress as a percentage (0-100)."""

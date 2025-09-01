@@ -155,17 +155,9 @@ class OrderManager:
                     continue
 
                 # Check if order should trigger
-                # For trailing stop orders
                 if hasattr(order, "should_trigger") and order.should_trigger(current_price):
                     order.comments = f"Triggered at {current_price}"
                     service.execute_order(order)
-                # For range bucket orders - check if current price is near any of the bucket prices
-                elif isinstance(order, RangeBucketBuyOrderModel):
-                    for bucket in order.buckets:
-                        if not bucket.is_triggered and abs(bucket.price - current_price) <= order.price_tolerance:
-                            log.info(f"Bucket price {bucket.price} reached for order {order.id}")
-                            service.execute_order(order)
-                            break
 
             except Exception as e:
                 log.error(f"Error processing order {order.id}: {e}", exc_info=True)

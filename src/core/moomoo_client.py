@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 import pandas
 from moomoo import RET_OK, OpenSecTradeContext, SecurityFirm, TrdMarket, TrdSide
 
-from src.core.orders.models import CurrentPosition, HistoricalOrder
+from src.core.orders.moomoo_dtos import CurrentPosition, HistoricalOrder
 from src.core.utilities import MOOMOO_FIRST_ORDER_DATE, get_current_datetime, get_logger
 
 log = get_logger(__name__)

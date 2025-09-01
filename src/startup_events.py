@@ -1,14 +1,15 @@
-from src.core.orders.managers import OrderManager
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, Request
+
 from src.alerts.task_service import TaskService
 from src.core.external_data_services.currency_rates import (
     get_usd_to_bitcoin_rate,
     get_usd_to_sgd_rate,
 )
-from contextlib import asynccontextmanager
-from src.core.utilities import get_logger
-from fastapi import Depends, FastAPI, Request
-
 from src.core.external_data_services.stock_data.yfinance import get_stock_price
+from src.core.orders.managers2 import OrderManager
+from src.core.utilities import get_logger
 
 log = get_logger(__name__)
 
@@ -40,4 +41,5 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    order_manager.stop()
     order_manager.stop()

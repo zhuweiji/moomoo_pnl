@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from src.core.database import BaseRepository
 from src.core.database.get_engine import SessionMaker
-from src.core.orders.models import CustomOrderStatus
 from src.core.orders.models2 import (
     BaseCustomOrderModel,
+    CustomOrderStatus,
     RangeBucketBuyOrderModel,
     TrailingStopBuyOrderModel,
     TrailingStopSellOrderModel,
