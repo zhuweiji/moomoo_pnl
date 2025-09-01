@@ -145,10 +145,10 @@
             .map(order => {
               const currentPrice = stockPrices.get(order.stock_code)
               const priceChange =
-                currentPrice && order.lowest_price !== 1e10
+                currentPrice && order.lowest_seen_price !== 1e10
                   ? (
-                      ((currentPrice - order.lowest_price) /
-                        order.lowest_price) *
+                      ((currentPrice - order.lowest_seen_price) /
+                        order.lowest_seen_price) *
                       100
                     ).toFixed(2) + '%'
                   : '-'
@@ -166,9 +166,9 @@
                             <td>${order.trailing_amount || '-'}</td>
                             <td>${order.trailing_percent || '-'}</td>
                             <td>${
-                              order.lowest_price === 1e10
+                              order.lowest_seen_price === 1e10
                                 ? '-'
-                                : order.lowest_price
+                                : order.lowest_seen_price
                             }</td>
                             <td>${
                               currentPrice ? currentPrice.toFixed(2) : '-'

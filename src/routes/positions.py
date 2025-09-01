@@ -6,8 +6,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from src.core.orders.models import CurrentPosition
 from src.core.moomoo_client import MoomooClient
+from src.core.orders.moomoo_dtos import CurrentPosition
 from src.routes.utils import get_current_username
 
 router = APIRouter()

@@ -1,8 +1,9 @@
 import json
 import math
+import uuid
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy import Boolean, DateTime
 from sqlalchemy import Enum as SQLAEnum
@@ -31,7 +32,7 @@ class BaseCustomOrderModel(BaseModel):
     __abstract__ = True
 
     # Core order fields
-    id = mapped_column(String, primary_key=True)
+    id = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     stock_code = mapped_column(String, nullable=False)
     quantity = mapped_column(Integer, nullable=False)
 
@@ -58,6 +59,9 @@ class BaseCustomOrderModel(BaseModel):
     def should_trigger(self, current_price):
         """Check if the order should be triggered based on current price."""
         raise NotImplementedError("Subclasses must implement should_trigger()")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 class PriceBucketModel(BaseModel):
@@ -191,7 +195,7 @@ class TrailingStopSellOrderModel(BaseCustomOrderModel):
     __tablename__ = "trailing_stop_sell_order"
 
     min_price = mapped_column(Float, nullable=False)
-    highest_price = mapped_column(Float, default=0, nullable=False)
+    highest_seen_price = mapped_column(Float, default=0, nullable=False)
     trailing_amount = mapped_column(Float, nullable=True)
     trailing_percent = mapped_column(Float, nullable=True)
 
@@ -222,13 +226,13 @@ class TrailingStopSellOrderModel(BaseCustomOrderModel):
 
     def get_trigger_price(self) -> Optional[float]:
         """Calculate the price that would trigger this order."""
-        if self.highest_price == 0:
+        if self.highest_seen_price == 0:
             return None
 
         if self.trailing_amount is not None:
-            return self.highest_price - self.trailing_amount
+            return self.highest_seen_price - self.trailing_amount
         elif self.trailing_percent is not None:
-            return self.highest_price * (1 - self.trailing_percent / 100)
+            return self.highest_seen_price * (1 - self.trailing_percent / 100)
         return None
 
     def should_trigger(self, current_price: float) -> bool:
@@ -237,8 +241,8 @@ class TrailingStopSellOrderModel(BaseCustomOrderModel):
             return False
 
         # Update highest price if we see a new high
-        if current_price > self.highest_price:
-            self.highest_price = current_price
+        if current_price > self.highest_seen_price:
+            self.highest_seen_price = current_price
             return False
 
         # Get trigger price
@@ -247,7 +251,7 @@ class TrailingStopSellOrderModel(BaseCustomOrderModel):
             return False
 
         # Check if conditions are met
-        return current_price <= trigger_price and current_price >= self.min_price and self.highest_price >= self.min_price
+        return current_price <= trigger_price and current_price >= self.min_price and self.highest_seen_price >= self.min_price
 
 
 class TrailingStopBuyOrderModel(BaseCustomOrderModel):
@@ -259,7 +263,7 @@ class TrailingStopBuyOrderModel(BaseCustomOrderModel):
     __tablename__ = "trailing_stop_buy_order"
 
     max_price = mapped_column(Float, nullable=False)
-    lowest_price = mapped_column(Float, default=float(1e10), nullable=False)
+    lowest_seen_price = mapped_column(Float, default=float(1e10), nullable=False)
     trailing_amount = mapped_column(Float, nullable=True)
     trailing_percent = mapped_column(Float, nullable=True)
 
@@ -288,20 +292,20 @@ class TrailingStopBuyOrderModel(BaseCustomOrderModel):
         super().__init__(**kwargs)
         self.validate()
 
-    def update_lowest_price(self, current_price: float) -> None:
+    def update_lowest_seen_price(self, current_price: float) -> None:
         """Update the lowest price if current price is lower."""
-        if self.lowest_price == float(1e10) or current_price < self.lowest_price:
-            self.lowest_price = current_price
+        if self.lowest_seen_price == float(1e10) or current_price < self.lowest_seen_price:
+            self.lowest_seen_price = current_price
 
     def get_trigger_price(self) -> Optional[float]:
         """Calculate the price that would trigger this order."""
-        if self.lowest_price == float(1e10):
+        if self.lowest_seen_price == float(1e10):
             return None
 
         if self.trailing_amount is not None:
-            return self.lowest_price + self.trailing_amount
+            return self.lowest_seen_price + self.trailing_amount
         elif self.trailing_percent is not None:
-            return self.lowest_price * (1 + self.trailing_percent / 100)
+            return self.lowest_seen_price * (1 + self.trailing_percent / 100)
         return None
 
     def should_trigger(self, current_price: float) -> bool:
@@ -309,7 +313,7 @@ class TrailingStopBuyOrderModel(BaseCustomOrderModel):
         if self.status != CustomOrderStatus.WAITING:
             return False
 
-        self.update_lowest_price(current_price)
+        self.update_lowest_seen_price(current_price)
 
         # Get trigger price
         trigger_price = self.get_trigger_price()
@@ -317,4 +321,4 @@ class TrailingStopBuyOrderModel(BaseCustomOrderModel):
             return False
 
         # Check if conditions are met
-        return current_price >= trigger_price and current_price <= self.max_price and self.lowest_price <= self.max_price
+        return current_price >= trigger_price and current_price <= self.max_price and self.lowest_seen_price <= self.max_price

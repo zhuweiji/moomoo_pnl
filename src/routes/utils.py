@@ -5,7 +5,6 @@ from typing import Dict
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from src.core.moomoo_client import MoomooClient
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)

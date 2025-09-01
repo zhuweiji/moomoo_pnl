@@ -42,4 +42,3 @@ async def lifespan(app: FastAPI):
     yield
 
     order_manager.stop()
-    order_manager.stop()

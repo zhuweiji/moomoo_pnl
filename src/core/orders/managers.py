@@ -23,10 +23,16 @@ from src.core.utilities import get_logger
 log = get_logger(__name__)
 
 # Define a union type for all supported order types
-OrderType = Union[
+OrderInstance = Union[
     TrailingStopSellOrderModel,
     TrailingStopBuyOrderModel,
     RangeBucketBuyOrderModel,
+]
+
+OrderType = Union[
+    Type[TrailingStopSellOrderModel],
+    Type[TrailingStopBuyOrderModel],
+    Type[RangeBucketBuyOrderModel],
 ]
 
 
@@ -46,25 +52,25 @@ class OrderManager:
         self.monitor_thread: Optional[threading.Thread] = None
 
         # Initialize order services
-        self.services: Dict[Type, OrderService] = {
+        self.services: Dict[OrderType, OrderService] = {
             TrailingStopSellOrderModel: TrailingStopSellOrderService(self.is_simulated_env),
             TrailingStopBuyOrderModel: TrailingStopBuyOrderService(self.is_simulated_env),
             RangeBucketBuyOrderModel: RangeBucketBuyOrderService(self.is_simulated_env),
         }
 
-    def add_order(self, order: OrderType) -> None:
+    def add_order(self, order: OrderInstance) -> None:
         """Add a new order."""
+        service = self.services[type(order)]
+        repository = service.repository
+        session = repository.get_db_session()
+
         positions = MoomooClient.get_current_positions()
         if positions is None:
             log.error("Unable to get positions")
             return
 
-        service = self.services[type(order)]
         service.validate_new_order(order, positions)
-
-        # Save order to database using the service's repository
-        repository = service.repository
-        repository.save([order], repository.get_db_session())
+        repository.save(order, session)
 
         log.info(f"Added new order: {order.id} of type {type(order).__name__}")
 
@@ -77,29 +83,36 @@ class OrderManager:
         """
         service = self.services[order_type]
         repository = service.repository
+        session = repository.get_db_session()
 
         # Get order from database
-        order = repository.get_by_id(order_id, repository.get_db_session())
+        order = repository.get_by_id(order_id, session)
         if not order:
             raise ValueError(f"Order {order_id} not found")
 
         if not service.can_cancel_order(order):
             raise ValueError(f"Cannot cancel order in status {order.status}")
 
-        order.status = CustomOrderStatus.CANCELLED.value
+        order.status = CustomOrderStatus.CANCELLED
         order.updated_on = datetime.now()
 
         # Update in database
-        repository.update(order, repository.get_db_session())
+        repository.update(order, session)
         log.info(f"Cancelled order: {order.id}")
 
-    def get_order(self, order_id: str, order_type: Type) -> Optional[OrderType]:
+    def get_order(self, order_id: str, order_type: Type) -> Optional[OrderInstance]:
         """Get a specific order by ID and type."""
         service = self.services[order_type]
         repository = service.repository
         return repository.get_by_id(order_id, repository.get_db_session())
 
-    def get_active_orders(self) -> List[OrderType]:
+    def update_order(self, order: OrderInstance) -> None:
+        """Update an existing order in the database."""
+        service = self.services[type(order)]
+        repository = service.repository
+        repository.update(order, repository.get_db_session())
+
+    def get_active_orders(self) -> List[OrderInstance]:
         """Get all active (waiting) orders from all repositories."""
         active_orders = []
 
@@ -110,7 +123,7 @@ class OrderManager:
 
         return active_orders
 
-    def get_all_orders(self, order_type: Optional[Type] = None) -> List[OrderType]:
+    def get_all_orders(self, order_type: Optional[Type] = None) -> List[OrderInstance]:
         """Get all orders, optionally filtered by type."""
         if order_type:
             service = self.services[order_type]
@@ -189,6 +202,6 @@ class OrderManager:
         """Stop the order monitoring thread."""
         self.running = False
         if self.monitor_thread:
-            self.monitor_thread.join(timeout=10)  # Wait up to 10 seconds
+            self.monitor_thread.join(timeout=1)
             self.monitor_thread = None
         log.info("Order manager stopped")

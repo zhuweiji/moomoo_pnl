@@ -25,22 +25,21 @@ class BaseCustomOrderRepository(BaseRepository):
     model: Type[BaseCustomOrderModel] = None  # type: ignore
 
     @classmethod
-    def save(cls, items: Collection[T], session: Session) -> None:
+    def save(cls, order: T, session: Session) -> None:
         """Save orders to the database.
 
         Args:
             items: Collection of orders to save
             session: Database session
         """
-        for order in items:
-            # Check if order already exists
-            existing = session.query(cls.model).filter_by(id=order.id).first()
-            if existing:
-                # Update existing order
-                cls._update_model_attributes(existing, order)
-            else:
-                # Add new order
-                session.add(order)
+        # Check if order already exists
+        existing = session.query(cls.model).filter_by(id=order.id).first()
+        if existing:
+            # Update existing order
+            cls._update_model_attributes(existing, order)
+        else:
+            # Add new order
+            session.add(order)
 
         session.commit()
 

@@ -140,10 +140,10 @@
             .map(order => {
               const currentPrice = stockPrices.get(order.stock_code)
               const priceChange =
-                currentPrice && order.highest_price !== 0
+                currentPrice && order.highest_seen_price !== 0
                   ? (
-                      ((currentPrice - order.highest_price) /
-                        order.highest_price) *
+                      ((currentPrice - order.highest_seen_price) /
+                        order.highest_seen_price) *
                       100
                     ).toFixed(2) + '%'
                   : '-'
@@ -161,7 +161,7 @@
                             <td>${order.min_price}</td>
                             <td>${order.trailing_amount || '-'}</td>
                             <td>${order.trailing_percent || '-'}</td>
-                            <td>${order.highest_price.toFixed(2)}</td>
+                            <td>${order.highest_seen_price.toFixed(2)}</td>
                             <td>${
                               currentPrice ? currentPrice.toFixed(2) : '-'
                             }</td>
@@ -286,9 +286,9 @@
 
         try {
           const response = await fetch(
-            `/api/trailing-stop/sell_orders/${orderId}/cancel`,
+            `/api/trailing-stop/sell_orders/${orderId}`,
             {
-              method: 'POST'
+              method: 'DELETE'
             }
           )
 
