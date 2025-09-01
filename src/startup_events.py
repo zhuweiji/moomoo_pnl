@@ -8,7 +8,7 @@ from src.core.external_data_services.currency_rates import (
     get_usd_to_sgd_rate,
 )
 from src.core.external_data_services.stock_data.yfinance import get_stock_price
-from src.core.orders.managers2 import OrderManager
+from src.core.orders.managers import OrderManager
 from src.core.utilities import get_logger
 
 log = get_logger(__name__)

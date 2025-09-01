@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from src.core.orders.models2 import (
+from src.core.orders.models import (
     BaseCustomOrderModel,
     CustomOrderStatus,
     PriceBucketModel,

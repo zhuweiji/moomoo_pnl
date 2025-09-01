@@ -1,4 +1,4 @@
-from src.core.orders.models2 import BaseCustomOrderModel
+from src.core.orders.models import BaseCustomOrderModel
 
 
 class TestOrderModel(BaseCustomOrderModel):

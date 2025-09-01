@@ -1,19 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.core.orders.models2 import (
+from src.core.orders.models import (
     CustomOrderStatus,
     PriceBucketModel,
     RangeBucketBuyOrderModel,
 )
-from src.core.orders.services2 import RangeBucketBuyOrderService
+from src.core.orders.services import RangeBucketBuyOrderService
 
 
 @pytest.fixture
 def mock_moomoo_client():
-    with patch("src.core.orders.services2.MoomooClient") as mock_client:
+    with patch("src.core.orders.services.MoomooClient") as mock_client:
         # Set up the mock trade context
         mock_trade_ctx = MagicMock()
         mock_client.get_trade_context.return_value.__enter__.return_value = mock_trade_ctx
@@ -26,7 +26,7 @@ def mock_moomoo_client():
 def sample_order():
     return RangeBucketBuyOrderModel(
         id="test-order-123",
-        stock_code="AAPL",
+        stock_code="US.AAPL",
         quantity=100,
         price_tolerance=0.01,
         start_price=140.0,
@@ -38,14 +38,14 @@ def sample_order():
             PriceBucketModel(price=145.0, is_triggered=False),
             PriceBucketModel(price=140.0, is_triggered=False),
         ],
-        created_on=datetime.now(),
-        updated_on=datetime.now(),
+        created_on=datetime.now(tz=timezone.utc),
+        updated_on=datetime.now(tz=timezone.utc),
     )
 
 
 @pytest.fixture
 def order_service():
-    with patch("src.core.orders.services2.RangeBucketBuyOrderRepository") as mock_repo:
+    with patch("src.core.orders.services.RangeBucketBuyOrderRepository") as mock_repo:
         # Configure the mock repository
         repository_instance = mock_repo.return_value
         repository_instance.get_db_session.return_value = MagicMock()
@@ -99,25 +99,25 @@ class TestRangeBucketBuyOrderService:
         sample_order.status = CustomOrderStatus.COMPLETED.value
         assert order_service.is_order_waiting(sample_order) is False
 
-    @patch("src.core.orders.services2.get_stock_price")
+    @patch("src.core.orders.services.get_stock_price")
     def test_get_current_price_from_positions(self, mock_get_stock_price, order_service, sample_order):
         """Test getting current price from positions."""
         mock_position = MagicMock()
-        mock_position.code = "AAPL"
+        mock_position.code = "US.AAPL"
         mock_position.nominal_price = 155.0
 
         price = order_service.get_current_price(sample_order, [mock_position])
         assert price == 155.0
         mock_get_stock_price.assert_not_called()
 
-    @patch("src.core.orders.services2.get_stock_price")
+    @patch("src.core.orders.services.get_stock_price")
     def test_get_current_price_fallback(self, mock_get_stock_price, order_service, sample_order):
         """Test getting current price falls back to API when not in positions."""
         mock_get_stock_price.return_value = 152.0
 
         price = order_service.get_current_price(sample_order, [])
         assert price == 152.0
-        mock_get_stock_price.assert_called_once_with("AAPL")
+        mock_get_stock_price.assert_called_once_with("US.AAPL")
 
     def test_execute_order_success(self, order_service, sample_order, mock_moomoo_client):
         """Test successful execution of an order."""
@@ -160,9 +160,11 @@ class TestRangeBucketBuyOrderService:
         # Mock the error status setter
         order_service.set_error_status = MagicMock()
 
-        # Execute the order and expect an exception
-        with pytest.raises(Exception):
-            order_service.execute_order(sample_order)
+        # Patch MoomooClient in the service module to use our mock
+        with patch("core.orders.services.MoomooClient", mock_moomoo_client):
+            # Execute the order and expect an exception
+            with pytest.raises(Exception):
+                order_service.execute_order(sample_order)
 
         # Verify error status was set
         order_service.set_error_status.assert_called_once()

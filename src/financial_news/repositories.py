@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from src.core.database.repository import BaseRepository
+from src.core.database import BaseRepository
 from src.core.utilities import JsonFileRepository
 from src.core.utilities.logger import get_logger
 

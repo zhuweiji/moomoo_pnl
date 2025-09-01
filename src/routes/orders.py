@@ -7,11 +7,10 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
-
 from src.core.orders.models import (
     CustomOrderStatus,
-    CustomTrailingStopBuyOrder,
-    CustomTrailingStopSellOrder,
+    TrailingStopBuyOrderModel,
+    TrailingStopSellOrderModel,
 )
 
 router = APIRouter()
@@ -93,28 +92,29 @@ class TrailingStopBuyOrderUpdate(BaseModel):
         return model_instance
 
 
-@router.post("/sell_orders", response_model=CustomTrailingStopSellOrder)
+@router.post("/sell_orders", response_model=TrailingStopSellOrderModel)
 async def create_sell_order(order: TrailingStopSellOrderCreate):
     """Create a new trailing stop sell order."""
     try:
-        new_order = CustomTrailingStopSellOrder.create(
+        new_order = TrailingStopSellOrderModel(
             stock_code=order.stock_code,
             min_price=order.min_price,
             quantity=order.quantity,
             trailing_amount=order.trailing_amount,
             trailing_percent=order.trailing_percent,
         )
+
         order_manager.add_order(new_order)
         return new_order
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/buy_orders", response_model=CustomTrailingStopBuyOrder)
+@router.post("/buy_orders", response_model=TrailingStopBuyOrderModel)
 async def create_buy_order(order: TrailingStopBuyOrderCreate):
     """Create a new trailing stop buy order."""
     try:
-        new_order = CustomTrailingStopBuyOrder.create(
+        new_order = TrailingStopBuyOrderModel(
             stock_code=order.stock_code,
             max_price=order.max_price,
             quantity=order.quantity,
@@ -131,7 +131,7 @@ async def create_buy_order(order: TrailingStopBuyOrderCreate):
 async def list_sell_orders(status: Optional[CustomOrderStatus] = None):
     """List all trailing stop sell orders, optionally filtered by status."""
     orders = order_manager.get_all_orders()
-    orders = [order for order in orders if isinstance(order, CustomTrailingStopSellOrder)]
+    orders = [order for order in orders if isinstance(order, TrailingStopSellOrderModel)]
 
     if status:
         orders = [order for order in orders if order.status == status]
@@ -149,7 +149,7 @@ async def list_sell_orders(status: Optional[CustomOrderStatus] = None):
 async def list_buy_orders(status: Optional[CustomOrderStatus] = None):
     """List all trailing stop buy orders, optionally filtered by status."""
     orders = order_manager.get_all_orders()
-    orders = [order for order in orders if isinstance(order, CustomTrailingStopBuyOrder)]
+    orders = [order for order in orders if isinstance(order, TrailingStopBuyOrderModel)]
     if status:
         orders = [order for order in orders if order.status == status]
 
@@ -162,29 +162,29 @@ async def list_buy_orders(status: Optional[CustomOrderStatus] = None):
     return response_data
 
 
-@router.get("/sell_orders/{order_id}", response_model=CustomTrailingStopSellOrder)
+@router.get("/sell_orders/{order_id}", response_model=TrailingStopSellOrderModel)
 async def get_sell_order(order_id: str):
     """Get a specific trailing stop sell order by ID."""
     order = order_manager.get_order(order_id)
-    if not order or not isinstance(order, CustomTrailingStopSellOrder):
+    if not order or not isinstance(order, TrailingStopSellOrderModel):
         raise HTTPException(status_code=404, detail="Sell order not found")
     return order
 
 
-@router.get("/buy_orders/{order_id}", response_model=CustomTrailingStopBuyOrder)
+@router.get("/buy_orders/{order_id}", response_model=TrailingStopBuyOrderModel)
 async def get_buy_order(order_id: str):
     """Get a specific trailing stop buy order by ID."""
     order = order_manager.get_order(order_id)
-    if not order or not isinstance(order, CustomTrailingStopBuyOrder):
+    if not order or not isinstance(order, TrailingStopBuyOrderModel):
         raise HTTPException(status_code=404, detail="Buy order not found")
     return order
 
 
-@router.patch("/sell_orders/{order_id}", response_model=CustomTrailingStopSellOrder)
+@router.patch("/sell_orders/{order_id}", response_model=TrailingStopSellOrderModel)
 async def update_sell_order(order_id: str, update_data: TrailingStopSellOrderUpdate):
     """Update a trailing stop sell order."""
     order = order_manager.get_order(order_id)
-    if not order or not isinstance(order, CustomTrailingStopSellOrder):
+    if not order or not isinstance(order, TrailingStopSellOrderModel):
         raise HTTPException(status_code=404, detail="Sell order not found")
 
     if order.status != CustomOrderStatus.WAITING:
@@ -209,11 +209,11 @@ async def update_sell_order(order_id: str, update_data: TrailingStopSellOrderUpd
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.patch("/buy_orders/{order_id}", response_model=CustomTrailingStopBuyOrder)
+@router.patch("/buy_orders/{order_id}", response_model=TrailingStopBuyOrderModel)
 async def update_buy_order(order_id: str, update_data: TrailingStopBuyOrderUpdate):
     """Update a trailing stop buy order."""
     order = order_manager.get_order(order_id)
-    if not order or not isinstance(order, CustomTrailingStopBuyOrder):
+    if not order or not isinstance(order, TrailingStopBuyOrderModel):
         raise HTTPException(status_code=404, detail="Buy order not found")
 
     if order.status != CustomOrderStatus.WAITING:
@@ -243,7 +243,7 @@ async def delete_sell_order(order_id: str):
     """Cancel a trailing stop sell order."""
     try:
         order = order_manager.get_order(order_id)
-        if not order or not isinstance(order, CustomTrailingStopSellOrder):
+        if not order or not isinstance(order, TrailingStopSellOrderModel):
             raise HTTPException(status_code=404, detail="Sell order not found")
         order_manager.cancel_order(order_id)
     except ValueError as e:
@@ -255,7 +255,7 @@ async def delete_buy_order(order_id: str):
     """Cancel a trailing stop buy order."""
     try:
         order = order_manager.get_order(order_id)
-        if not order or not isinstance(order, CustomTrailingStopBuyOrder):
+        if not order or not isinstance(order, TrailingStopBuyOrderModel):
             raise HTTPException(status_code=404, detail="Buy order not found")
         order_manager.cancel_order(order_id)
     except ValueError as e:

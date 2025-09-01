@@ -7,14 +7,14 @@ from moomoo.common.constant import OrderType, TimeInForce, TrdEnv
 
 from src.core.external_data_services.stock_data.yfinance import get_stock_price
 from src.core.moomoo_client import MoomooClient
-from src.core.orders.models2 import (
+from src.core.orders.models import (
     CustomOrderStatus,
     PriceBucketModel,
     RangeBucketBuyOrderModel,
     TrailingStopBuyOrderModel,
     TrailingStopSellOrderModel,
 )
-from src.core.orders.repositories2 import (
+from src.core.orders.repositories import (
     BaseCustomOrderRepository,
     RangeBucketBuyOrderRepository,
     TrailingStopBuyOrderRepository,
@@ -30,6 +30,9 @@ class OrderService(ABC):
 
     def __init__(self, is_simulated_env: bool = False):
         self.is_simulated_env = is_simulated_env
+        if "PYTEST_CURRENT_TEST" in os.environ and not is_simulated_env:
+            raise ValueError("About to run a non-simulated trade in a test environment. Are you sure?")
+
         self.repository: type[BaseCustomOrderRepository] = None  # type: ignore
 
     @abstractmethod
@@ -145,7 +148,7 @@ class RangeBucketBuyOrderService(OrderService):
 
         except Exception as e:
             self.set_error_status(order, str(e))
-
+            log.error(f"Error executing order {order.id}: {e}")
             raise
 
     def set_error_status(self, order: RangeBucketBuyOrderModel, error_msg: str) -> None:

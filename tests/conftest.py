@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.core.orders.models2 import BaseModel
+from src.core.orders.models import BaseModel
 
 
 def test_db_session():
